@@ -394,7 +394,6 @@ void store_event(uint8_t *event) {
 		;
 	}
     CORE_EXIT_ATOMIC(); // Enable interrupts
-
 }
 
 
@@ -525,7 +524,7 @@ void process_scan(struct gecko_cmd_packet* evt) {
 static void scan_cb_orig(const bt_addr_le_t *addr, s8_t rssi, u8_t adv_type,
             struct net_buf_simple *buf)
 */
-#define SCAN_DEBUG
+// #define SCAN_DEBUG
 void process_scan_encounter(struct gecko_cmd_packet* evt) {
 	uint32_t timestamp = ts_ms();
 
@@ -544,13 +543,13 @@ void process_scan_encounter(struct gecko_cmd_packet* evt) {
     rssi = -rssi;
 
     if (true) {
-    	bool found_evt = findServiceInAdvertisement(evt->data.evt_le_gap_extended_scan_response.data.data,
-    									evt->data.evt_le_gap_extended_scan_response.data.len);
 	/*
 	if(findServiceInAdvertisement(evt->data.evt_le_gap_extended_scan_response.data.data,
 									evt->data.evt_le_gap_extended_scan_response.data.len)) {
     */
 #ifdef SCAN_DEBUG
+	bool found_evt = findServiceInAdvertisement(evt->data.evt_le_gap_extended_scan_response.data.data,
+									evt->data.evt_le_gap_extended_scan_response.data.len);
     printk("\tfinish parse data %d\r\n", found_evt);
 #endif
         Encounter_record *current_encounter;
@@ -649,8 +648,9 @@ void process_scan_encounter(struct gecko_cmd_packet* evt) {
             current_encounter->flag |= 0x4;
 
         }
+        memset(current_encounter->public_key, 0xFF, 32);
 #ifdef SCAN_DEBUG
-         printk("\tdone scan cb\n");
+        printk("\tdone scan cb\n");
 #endif
         // uart_encounter(*current_encounter);
     }
@@ -662,20 +662,22 @@ void flash_store(void) {
     uint32_t timestamp = ts_ms();
     uint32_t epoch_minute = ((timestamp-offsettime) / 1000 + epochtimesync)/60;
     /*
-    uart_printf("epoch_minute: %d, p_idx: %d, c_idx: %d\n", epoch_minute,
+    printLog("flash_store, epoch_minute: %ld, p_idx: %ld, c_idx: %ld\n", epoch_minute,
                     p_fifo_last_idx, c_fifo_last_idx);
-    */
+	*/
     while (c_fifo_last_idx > p_fifo_last_idx) {
 
         current_encounter = encounters + (p_fifo_last_idx & IDX_MASK);
         // uart_printf("idx: %d, minute: %d\n", p_fifo_last_idx, current_encounter->minute);
         if (current_encounter->minute < epoch_minute) { // this is an old record write to flash
-            // uint32_t shared_key[32];
-            // X25519_calc_shared_secret(shared_key, private_key, current_encounter->public_key);
-            int len_written = fs_write(&encounter_file, (uint8_t *)current_encounter, 64);
-            fs_sync(&encounter_file);
-            total_written += len_written;
-
+        	uint8_t *ptr;
+        	ptr = (uint8_t *) current_encounter;
+        	send32bytes(ptr);
+        	send32bytes(ptr+32);
+        	/*
+        	store_event(ptr);
+        	store_event(ptr+32);
+        	*/
             p_fifo_last_idx++;
         } else {
             // uart_printf("Done flash_store looking back\n");
