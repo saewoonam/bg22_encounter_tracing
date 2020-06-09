@@ -570,7 +570,7 @@ void process_scan_encounter(struct gecko_cmd_packet* evt) {
         if (idx<0) {
             // No index returned
 #ifdef SCAN_DEBUG
-    printk("\tCreate new encounter: mask_idx: %d\n", c_fifo_last_idx & IDX_MASK);
+    printk("\tCreate new encounter: mask_idx: %ld\n", c_fifo_last_idx & IDX_MASK);
 #endif
             current_encounter = encounters + (c_fifo_last_idx & IDX_MASK);
             memset((uint8_t *)current_encounter, 0, 64);  // clear all values
@@ -659,7 +659,7 @@ void process_scan_encounter(struct gecko_cmd_packet* evt) {
 void flash_store(void) {
     Encounter_record *current_encounter;
     // uint32_t start = p_fifo_last_idx;
-    uint32_t timestamp = k_uptime_get_32();
+    uint32_t timestamp = ts_ms();
     uint32_t epoch_minute = ((timestamp-offsettime) / 1000 + epochtimesync)/60;
     /*
     uart_printf("epoch_minute: %d, p_idx: %d, c_idx: %d\n", epoch_minute,
@@ -670,7 +670,7 @@ void flash_store(void) {
         current_encounter = encounters + (p_fifo_last_idx & IDX_MASK);
         // uart_printf("idx: %d, minute: %d\n", p_fifo_last_idx, current_encounter->minute);
         if (current_encounter->minute < epoch_minute) { // this is an old record write to flash
-            uint32_t shared_key[32];
+            // uint32_t shared_key[32];
             // X25519_calc_shared_secret(shared_key, private_key, current_encounter->public_key);
             int len_written = fs_write(&encounter_file, (uint8_t *)current_encounter, 64);
             fs_sync(&encounter_file);
