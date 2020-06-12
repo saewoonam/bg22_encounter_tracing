@@ -1,3 +1,15 @@
+ /*******************************************************************************
+ *
+ * Copyright 2020 Sae Woo Nam
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ *
+ *
+ * Modified Silabs empty example to perform measurements of RSSI for exposure notification
+ *
+ *
+*/
+
 /***************************************************************************//**
  * @file app.c
  * @brief Silicon Labs Empty Example Project
@@ -18,17 +30,6 @@
  * sections of the MSLA applicable to Source Code.
  *
  ******************************************************************************/
- /*******************************************************************************
- * # License
- * Copyright 2020 Sae Woo Nam
- *
- * Modified empty example to perform measurements of RSSI for exposure notification
- *
- *
- *******************************************************************************
- *******************************************************************************
- *******************************************************************************
-*/
 /* Bluetooth stack headers */
 #include "bg_types.h"
 #include "native_gecko.h"
@@ -44,7 +45,10 @@
 #include "spiflash/btl_storage.h"
 
 #include "crypto/monocypher.h"
-#include "crypto/x25519-cortex-m4.h"/*
+#include "crypto/x25519-cortex-m4.h"
+#include "sleep.h"
+
+/*
  *
 #include "retargetserial.h"
 
@@ -68,23 +72,100 @@ uint32_t p_fifo_last_idx;
 #define		printk			printLog
 #endif
 
+
+/***************************************************************************************************
+  Local Macros and Definitions for handling OTA file/data xfer
+ **************************************************************************************************/
+
+#define STATE_ADVERTISING 1
+#define STATE_CONNECTED   2
+#define STATE_SPP_MODE    3
+
+
+/***************************************************************************************************
+ Local Variables for OTOA file/data xfer
+ **************************************************************************************************/
+static uint8 _conn_handle = 0xFF;
+static int _main_state;
+
+typedef struct
+{
+	uint32_t num_pack_sent;
+	uint32_t num_bytes_sent;
+	uint32_t num_pack_received;
+	uint32_t num_bytes_received;
+	uint32_t num_writes; /* Total number of send attempts */
+} tsCounters;
+
+tsCounters _sCounters;
+
+static uint8 _max_packet_size = 20; // Maximum bytes per one packet
+static uint8 _min_packet_size = 20; // Target minimum bytes for one packet
+
+static void reset_variables()
+{
+	_conn_handle = 0xFF;
+	_main_state = STATE_ADVERTISING;
+
+	_max_packet_size = 20;
+
+	memset(&_sCounters, 0, sizeof(_sCounters));
+}
+
+void printStats(tsCounters *psCounters)
+{
+	printLog("Outgoing data:\r\n");
+	printLog(" bytes/packets sent: %lu / %lu ", psCounters->num_bytes_sent, psCounters->num_pack_sent);
+	printLog(", num writes: %lu\r\n", psCounters->num_writes);
+#ifdef RX_OVERFLOW_TRACKING
+	if(rxOverFlow) {
+		printLog(" NOTE: RX buffer overflowed %d times\r\n", rxOverFlow);
+	} else {
+		printLog(" No RX buffer overflow detected\r\n");
+	}
+#else
+	printLog("(RX buffer overflow is not tracked)\r\n");
+#endif
+
+	printLog("Incoming data:\r\n");
+	printLog(" bytes/packets received: %lu / %lu\r\n", psCounters->num_bytes_received, psCounters->num_pack_received);
+
+	return;
+}
+/**************************
+ * End of file xfer stuff
+ */
+
+
 /* Print boot message */
 static void bootMessage(struct gecko_msg_system_boot_evt_t *bootevt);
 int test_encrypt(uint8_t *answer);
 void test_encrypt_compare(void);
+void update_public_key(void);
+void flash_store(void);
 
 /* Flag for indicating DFU Reset must be performed */
 static uint8_t boot_to_dfu = 0;
 
 static bool output_serial = false;
 static bool write_flash = false;
+uint32_t encounter_count = 0;
+
+uint8_t private_key[32];
+uint8_t public_key[32];
+uint8_t shared_key[32];
+
+enum
+{
+  MODE_RAW, MODE_ENCOUNTER
+};
 enum
 {
   HANDLE_DEMO, HANDLE_IBEACON
 };
 enum
 {
-  HANDLE_ADV, HANDLE_UART
+  HANDLE_ADV, HANDLE_UART, HANDLE_UPDATE_KEY
 };
 
 struct
@@ -98,7 +179,7 @@ struct
   uint8_t svcLen; /* Company ID field. */
   uint8_t svcType; /* Company ID field. */
   uint8_t svcID[2]; /* Beacon Type field. */
-  uint8_t uuid[16]; /* 128-bit Universally Unique Identifier (UUID). The UUID is an identifier for the company using the beacon*/
+  uint8_t key[16]; /* 128-bit Universally Unique Identifier (UUID). The UUID is an identifier for the company using the beacon*/
   uint8_t meta[4]; /* Beacon Type field. */
 } etAdvData = {
 /* Flag bits - See Bluetooth 4.0 Core Specification , Volume 3, Appendix C, 18.1 for more details on flags. */
@@ -125,6 +206,52 @@ struct
 
 };
 
+#define TICKS_PER_SECOND 32768
+uint32_t time_overflow=0;   // current time overflow
+uint32_t offset_time = 0;
+uint32_t offset_overflow = 0;  // set of offset has overflowed
+uint32_t next_minute = 60000;
+uint32_t epochtimesync = 0;
+struct
+{
+	uint32_t time_overflow;
+	uint32_t offset_time;
+	uint32_t offset_overflow;
+	uint32_t next_minute;
+	uint32_t epochtimesync;
+	bool gottime;
+} _time = {
+		0, 0, 0, 60000, 0, false
+};
+
+#ifdef ENCOUNTER
+int mode = MODE_ENCOUNTER;
+#else
+int mode = MODE_RAW;
+#endif
+
+uint32_t ts_ms() {
+	/*  Need to handle overflow... of t_ms... 36hrs*32... perhaps every battery change
+	 *
+	 */
+	static uint32_t old_ts = 0;
+	uint32_t ts = RTCC_CounterGet();
+	uint32_t t = ts/TICKS_PER_SECOND;
+	uint32_t fraction = ts % TICKS_PER_SECOND;
+	uint32_t t_ms = t*1000 + (1000*fraction)/TICKS_PER_SECOND;
+    if (old_ts > ts) {
+    	time_overflow++;
+    }
+    t_ms += (1000*time_overflow) << 17; // RTCC overflows after 1<<17 seconds
+    old_ts = ts;
+
+	return t_ms;
+}
+
+uint32_t k_uptime_get() {
+	return ts_ms();
+}
+
 void newRandAddress(void) {
   bd_addr rnd_addr;
   struct gecko_msg_le_gap_set_advertise_random_address_rsp_t *response;
@@ -141,7 +268,9 @@ void newRandAddress(void) {
   do {
 	  rnd_response = gecko_cmd_system_get_random_data(6);
 	  // printLog("rnd response: %d %d\r\n", rnd_response->result, rnd_response->data.len);
-	  rnd_response->data.data[0] &= 0xFC;  // Last two bits must 0 for valid random mac address
+	  rnd_response->data.data[5] &= 0x3F;  // Last two bits must 0 for valid random mac address
+	  // rnd_response->data.data[0] = 0xFF;  // Make it easier to debug
+
 	  memcpy(rnd_addr.addr, rnd_response->data.data, 6);
 	  /*
 	  printLog("new    board_addr    :   %02x:%02x:%02x:%02x:%02x:%02x\r\n",
@@ -154,6 +283,7 @@ void newRandAddress(void) {
 					);
 					*/
 	  response = gecko_cmd_le_gap_set_advertise_random_address(HANDLE_IBEACON, 0x03, rnd_addr);
+	  // printLog("set random address respose %ld, 0x%X\r\n", ts_ms(), response->result);
   } while(response->result>0);
   /*
    printLog("random board_addr %3d:   %02x:%02x:%02x:%02x:%02x:%02x\r\n", response->result,
@@ -168,6 +298,19 @@ void newRandAddress(void) {
 
   gecko_cmd_le_gap_start_advertising(HANDLE_IBEACON, le_gap_user_data, le_gap_non_connectable);
 }
+void update_adv_key(){
+	  uint8_t len = sizeof(etAdvData);
+	  uint8_t *pData = (uint8_t*)(&etAdvData);
+
+	  if (etAdvData.meta[3] == 1) {
+		  etAdvData.meta[3] = 0;  //Clear first bit
+		  memcpy(etAdvData.key, public_key, 16);
+	  } else {
+		  etAdvData.meta[3] = 1;  //Set first bit 0
+		  memcpy(etAdvData.key, public_key+16, 16);
+	  }
+	  gecko_cmd_le_gap_bt5_set_adv_data(HANDLE_IBEACON, 0, len, pData);
+}
 void bcnSetupAdvBeaconing(void)
 {
 
@@ -176,15 +319,14 @@ void bcnSetupAdvBeaconing(void)
    */
 
   //
-  //uint8_t len = sizeof(bcnBeaconAdvData);
-  //uint8_t *pData = (uint8_t*)(&bcnBeaconAdvData);
-  uint8_t len = sizeof(etAdvData);
-  uint8_t *pData = (uint8_t*)(&etAdvData);
+  // uint8_t len = sizeof(etAdvData);
+  // uint8_t *pData = (uint8_t*)(&etAdvData);
   // bd_addr rnd_addr;
   // struct gecko_msg_le_gap_set_advertise_random_address_rsp_t *response;
   /* Set custom advertising data */
-
-  gecko_cmd_le_gap_bt5_set_adv_data(HANDLE_IBEACON, 0, len, pData);
+  update_public_key();
+  update_adv_key();
+  // gecko_cmd_le_gap_bt5_set_adv_data(HANDLE_IBEACON, 0, len, pData);
 
   /* Set 0 dBm Transmit Power */
   gecko_cmd_le_gap_set_advertise_tx_power(HANDLE_IBEACON, 0);
@@ -226,13 +368,11 @@ void bcnSetupAdvBeaconing(void)
 
   /* Start advertising in user mode */
   gecko_cmd_le_gap_start_advertising(HANDLE_IBEACON, le_gap_user_data, le_gap_non_connectable);
-  gecko_cmd_hardware_set_soft_timer(32768*10,HANDLE_ADV,0);
+  // gecko_cmd_hardware_set_soft_timer(32768*60,HANDLE_ADV,0);
+  gecko_cmd_hardware_set_soft_timer(32768,HANDLE_UPDATE_KEY,0);
   //gecko_cmd_hardware_set_soft_timer(32768>>2,HANDLE_UART,0);
 
 }
-uint8_t private_key[32];
-uint8_t public_key[32];
-uint8_t shared_key[32];
 
 void update_public_key(void) {
 	struct gecko_msg_system_get_random_data_rsp_t *rnd_response;
@@ -242,6 +382,41 @@ void update_public_key(void) {
 	memcpy(private_key+16, rnd_response->data.data, 16);
 
 	X25519_calc_public_key(public_key, private_key);
+}
+
+uint32_t epoch_day(void) {
+	uint32_t timestamp = ts_ms();
+	return ((timestamp-offset_time) / 1000 + epochtimesync)/(60*60*24);
+}
+
+void update_next_minute(void) {
+	static uint32_t day = 0;
+	next_minute +=60000;
+	//  Change key daily... for now.
+	if (day==0) {
+		day = epoch_day();
+	}
+	uint32_t current_day = epoch_day();
+	if (current_day>day) {
+		update_public_key();
+		newRandAddress();
+		day = current_day;
+	}
+	if (write_flash) flash_store();
+}
+
+void setup_next_minute(void) {
+	printLog("setup next_minute\r\n");
+    uint32_t timestamp = ts_ms();
+    uint32_t epoch_minute_origin = (epochtimesync)/60;
+    uint32_t extra_seconds = epochtimesync - 60*epoch_minute_origin;
+    next_minute = offset_time - extra_seconds * TICKS_PER_SECOND + 60000;
+    printLog("offset_time, timestamp, next minute: %ld, %ld, %ld\r\n", offset_time, timestamp, next_minute);
+    /*
+    while (next_minute < timestamp) {
+    	next_minute += 60000;
+    }
+    */
 }
 
 void uart_ch_rssi(struct Ch_data e) {
@@ -281,35 +456,6 @@ void startObserving(uint16_t interval, uint16_t window) {
 	gecko_cmd_le_gap_start_discovery(le_gap_phy_1m,le_gap_discover_observation);
 }
 
-#define TICKS_PER_SECOND 32768
-uint32_t time_overflow=0;
-uint32_t epochtime = 0;
-uint32_t offset_time = 0;
-uint32_t offset_overflow = 0;
-uint32_t next_minute = 60000;
-uint32_t offsettime = 0;
-uint32_t epochtimesync = 0;
-
-uint32_t ts_ms() {
-	/*  Need to handle overflow... This will happen every 36 hours...
-	 *
-	 */
-	static uint32_t old_ts = 0;
-	uint32_t ts = RTCC_CounterGet();
-	uint32_t t = ts/TICKS_PER_SECOND;
-	uint32_t fraction = ts % TICKS_PER_SECOND;
-	uint32_t t_ms = t*1000 + (1000*fraction)/TICKS_PER_SECOND;
-    if (old_ts > ts) {
-    	time_overflow++;
-    }
-    old_ts = ts;
-
-	return t_ms;
-}
-
-uint32_t k_uptime_get() {
-	return ts_ms();
-}
 
 uint8_t findServiceInAdvertisement(uint8_t *data, uint8_t len)
 {
@@ -353,7 +499,6 @@ void send32bytes(uint8_t *buffer) {
 		RETARGET_WriteChar(*ptr++);
 	}
 }
-uint32_t encounter_count = 0;
 
 void determine_counts() {
 	uint32_t count=0;
@@ -396,6 +541,83 @@ void store_event(uint8_t *event) {
     CORE_EXIT_ATOMIC(); // Enable interrupts
 }
 
+void store_time() {
+    uint8_t time_evt[32];
+	memset(time_evt, 0, 32);
+	memcpy(time_evt+4, &epochtimesync, 4);
+	memcpy(time_evt+8, &offset_time, 4);
+	memcpy(time_evt+12, &offset_overflow, 4);
+	memset(time_evt+16, 0xFF, 16);
+	_time.gottime = true;
+	_time.epochtimesync = epochtimesync;
+	_time.next_minute = next_minute;
+	_time.offset_overflow = offset_overflow;
+	_time.offset_time = offset_time;
+
+    store_event(time_evt);
+}
+
+void send_ota_uint32(uint32_t data) {
+	uint32_t len = 4;
+	uint16 result;
+
+	do {
+		result = gecko_cmd_gatt_server_send_characteristic_notification(_conn_handle, gattdb_gatt_spp_data, len, (uint8_t *) &data)->result;
+	} while(result == bg_err_out_of_memory);
+}
+
+void send_ota_uint8(uint8_t data) {
+	uint32_t len = 1;
+	uint16 result;
+
+	do {
+		result = gecko_cmd_gatt_server_send_characteristic_notification(_conn_handle, gattdb_gatt_spp_data, len, (uint8_t *) &data)->result;
+	} while(result == bg_err_out_of_memory);
+}
+
+void send_data()
+{
+	uint32_t len = encounter_count<<5;
+	uint8 data[256];
+	uint16 result;
+    int xfer_len = _min_packet_size & 0xFC;  // Make sure it is divisible by 4
+    uint32_t start = ts_ms();
+	uint32_t addr=0;
+	int bad=0;
+
+	printLog("packet xfer_len: %d\r\n", xfer_len);
+	printLog("len: %ld\r\n", len);
+    while (len>0) {
+        // xfer_len = _min_packet_size;
+		if (len<_min_packet_size) xfer_len = len;
+
+		do {
+			// xfer_len = _min_packet_size;
+			int32_t retCode = storage_readRaw(addr, data, xfer_len);
+			if (retCode)  bad++;
+			result = gecko_cmd_gatt_server_send_characteristic_notification(_conn_handle, gattdb_gatt_spp_data, xfer_len, data)->result;
+			_sCounters.num_writes++;
+		} while(result == bg_err_out_of_memory);
+
+		if (result != 0) {
+			printLog("Unexpected error: %x\r\n", result);
+		} else {
+			_sCounters.num_pack_sent++;
+			_sCounters.num_bytes_sent += xfer_len;
+		}
+        addr += xfer_len;
+        len -= xfer_len;
+    	// printLog("addr: %ld, len: %ld\r\n", addr, len);
+	}
+    printLog("Done xfer %ld\r\n",  ts_ms()-start);
+	printLog("number of bad memory reads in xfer: %d\r\n", bad);
+
+}
+
+uint32_t em(uint32_t t) {
+	return ((t-offset_time) / 1000 + epochtimesync)/60;
+}
+
 
 const char *version_str = "Version: " __DATE__ " " __TIME__;
 void parse_command(char c) {
@@ -422,6 +644,11 @@ void parse_command(char c) {
 		printLog("bad: %d\r\n", bad);
         break;
 	}
+	case 'f':{
+		printLog("Trying to send data ota\r\n");
+		send_data();  // over bluetooth
+        break;
+	}
 	case 'G':{
 		uint32_t addr=0;
 		uint8_t buffer[32];
@@ -440,6 +667,13 @@ void parse_command(char c) {
 	case 'w':{
 		write_flash = true;
 		printLog("Start writing to flash\r\n");
+		uint8_t blank[32];
+		memset(blank, 0, 32);
+		store_event(blank);
+		if (mode==MODE_ENCOUNTER) {
+			store_event(blank);
+		}
+		store_time();
         break;
 	}
 	case 's':{
@@ -454,20 +688,53 @@ void parse_command(char c) {
 
 		break;
 	}
+	case 'A': {
+		uint32_t ts = ts_ms();
+		send_ota_uint32(ts);
+		send_ota_uint32(time_overflow);
+		printLog("ts, overflow: %ld, %ld\r\n", ts, time_overflow);
+		break;
+	}
 	case 'o': {
 		uint8_t time_evt[32];
-        get_uint32(&epochtime);
+        get_uint32(&epochtimesync);
         get_uint32(&offset_time);
         get_uint32(&offset_overflow);
-		printLog("epochtime offset_times: %ld %ld %ld\r\n", epochtime, offset_time, offset_overflow);
+		printLog("epochtime offset_times: %ld %ld %ld\r\n", epochtimesync, offset_time, offset_overflow);
 		memset(time_evt, 0, 32);
-		memcpy(time_evt+4, &epochtime, 4);
+		memcpy(time_evt+4, &epochtimesync, 4);
 		memcpy(time_evt+8, &offset_time, 4);
 		memcpy(time_evt+12, &offset_overflow, 4);
 	    store_event(time_evt);
-
+	    setup_next_minute();
 		break;
 	}
+	case 'O': {
+		// uint8_t time_evt[32];
+		uint32_t *timedata;
+		uint32_t ts = ts_ms();
+		timedata = (uint32_t *) gecko_cmd_gatt_server_read_attribute_value(gattdb_gatt_spp_data,0 )->value.data;
+		uint8_t len = gecko_cmd_gatt_server_read_attribute_value(gattdb_gatt_spp_data,0 )->value.len;
+        printLog("In O, got %d bytes, ts: %ld\r\n", len, ts);
+        epochtimesync = timedata[0]; // units are sec
+        offset_time = timedata[1];  // units are ms
+        offset_overflow = timedata[2];  // units are integers
+
+        uint32_t epoch_minute_origin = (epochtimesync)/60;
+        uint32_t extra_seconds = epochtimesync%60;
+        next_minute = offset_time - extra_seconds * 1000 + 60000;
+        uint32_t dt = (ts-offset_time)/1000;
+        uint32_t epoch_minute = (dt + epochtimesync)/60;
+        printLog("em(ts), em(next_minute) %ld, %ld\r\n", em(ts), em(next_minute+1000));
+
+        printLog("offset_time, timestamp, next minute: %ld, %ld, %ld %ld\r\n", offset_time, ts, next_minute, extra_seconds);
+
+		printLog("epochtimes, e_min, e_min_origin: %ld %ld %ld\r\n", epochtimesync, epoch_minute, epoch_minute_origin);
+        // store_time();
+		break;
+	}
+
+
     case 'h':
         printLog("%s\r\n", version_str);
         break;
@@ -524,7 +791,7 @@ void process_scan(struct gecko_cmd_packet* evt) {
 static void scan_cb_orig(const bt_addr_le_t *addr, s8_t rssi, u8_t adv_type,
             struct net_buf_simple *buf)
 */
-// #define SCAN_DEBUG
+//#define SCAN_DEBUG
 void process_scan_encounter(struct gecko_cmd_packet* evt) {
 	uint32_t timestamp = ts_ms();
 
@@ -542,20 +809,22 @@ void process_scan_encounter(struct gecko_cmd_packet* evt) {
 	mac_addr = evt->data.evt_le_gap_extended_scan_response.address.addr;
     rssi = -rssi;
 
-    if (true) {
-	/*
+    //if (true) {
+
 	if(findServiceInAdvertisement(evt->data.evt_le_gap_extended_scan_response.data.data,
 									evt->data.evt_le_gap_extended_scan_response.data.len)) {
-    */
+
 #ifdef SCAN_DEBUG
 	bool found_evt = findServiceInAdvertisement(evt->data.evt_le_gap_extended_scan_response.data.data,
 									evt->data.evt_le_gap_extended_scan_response.data.len);
-    printk("\tfinish parse data %d\r\n", found_evt);
+    printk("\tfinish parse data %d, len: %d\r\n", found_evt, evt->data.evt_le_gap_extended_scan_response.data.len);
 #endif
         Encounter_record *current_encounter;
-        if (timestamp>next_minute) next_minute+=60000;
+        if (timestamp>next_minute) update_next_minute();
         int sec_timestamp = (timestamp - (next_minute - 60000)) / 1000;
-        uint32_t epoch_minute = ((timestamp-offsettime) / 1000 + epochtimesync)/60;
+        uint32_t epoch_minute = ((timestamp-offset_time) / 1000 + epochtimesync)/60;
+
+        // printLog("epoch minute, sec: %ld, %d\r\n", epoch_minute, sec_timestamp);
 
 #ifdef SCAN_DEBUG
     printk("\tTry to check if in fifo, epoch_minute: %ld sec:%d\r\n", epoch_minute, sec_timestamp);
@@ -580,7 +849,7 @@ void process_scan_encounter(struct gecko_cmd_packet* evt) {
             current_encounter->rssi_data[saewoo_hack].mean = rssi;
             current_encounter->rssi_data[saewoo_hack].var = 0;
             current_encounter->first_time = sec_timestamp;
-            current_encounter->last_time = sec_timestamp;
+            current_encounter->last_time = 0xFF;
             current_encounter->minute = epoch_minute;
             c_fifo_last_idx++;
         } else {
@@ -612,14 +881,21 @@ void process_scan_encounter(struct gecko_cmd_packet* evt) {
             current_encounter->last_time = sec_timestamp;
             current_encounter->minute = epoch_minute;
         }
+        // printLog("text:rssi, ch: %d, %d\r\n", rssi, channel);
 #ifdef SCAN_DEBUG
         uart_ch_rssi(current_encounter->rssi_data[saewoo_hack]);
 #endif
         // Update bobs shared key
 #ifdef SCAN_DEBUG
-    printk("\tDo crypto stuff\n");
+    printk("\tDo crypto stuff flag: %02X\n", current_encounter->flag);
 #endif
         uint8_t hi_lo_byte = evt->data.evt_le_gap_extended_scan_response.data.data[30];
+#ifdef SCAN_DEBUG
+    for(int index=26; index<31; index++) {
+    	printk("\t%d: %02X\r\n", index, evt->data.evt_le_gap_extended_scan_response.data.data[index]);
+    }
+    printk("\thi_lo_ byte %d\n", hi_lo_byte);
+#endif
         uint8_t *rpi;
         rpi = evt->data.evt_le_gap_extended_scan_response.data.data + 11;
         // uart_printf("\ttime: %u, flag: %d, hi_lo_byte: %d\n", timestamp, current_encounter->flag, hi_lo_byte);
@@ -648,7 +924,7 @@ void process_scan_encounter(struct gecko_cmd_packet* evt) {
             current_encounter->flag |= 0x4;
 
         }
-        memset(current_encounter->public_key, 0xFF, 32);
+        // memset(current_encounter->public_key, 0xFF, 32);
 #ifdef SCAN_DEBUG
         printk("\tdone scan cb\n");
 #endif
@@ -660,7 +936,7 @@ void flash_store(void) {
     Encounter_record *current_encounter;
     // uint32_t start = p_fifo_last_idx;
     uint32_t timestamp = ts_ms();
-    uint32_t epoch_minute = ((timestamp-offsettime) / 1000 + epochtimesync)/60;
+    uint32_t epoch_minute = ((timestamp-offset_time) / 1000 + epochtimesync)/60;
     /*
     printLog("flash_store, epoch_minute: %ld, p_idx: %ld, c_idx: %ld\n", epoch_minute,
                     p_fifo_last_idx, c_fifo_last_idx);
@@ -672,20 +948,19 @@ void flash_store(void) {
         if (current_encounter->minute < epoch_minute) { // this is an old record write to flash
         	uint8_t *ptr;
         	ptr = (uint8_t *) current_encounter;
+        	/*
         	send32bytes(ptr);
         	send32bytes(ptr+32);
-        	/*
+        	*/
         	store_event(ptr);
         	store_event(ptr+32);
-        	*/
-            p_fifo_last_idx++;
+
+        	p_fifo_last_idx++;
         } else {
             // uart_printf("Done flash_store looking back\n");
             return;
         }
     }
-    // uart_printf("Done flash_store, after while\n");
-
 }
 
 /* Main application */
@@ -758,12 +1033,17 @@ void appMain(gecko_configuration_t *pconfig)
 			gecko_cmd_le_gap_set_advertise_timing(HANDLE_DEMO, 320, 320, 0, 0);
 
 			gecko_cmd_le_gap_set_advertise_tx_power(HANDLE_DEMO, 0);
+	    	// prep data xfer
+			reset_variables();
+	    	gecko_cmd_gatt_set_max_mtu(247);
+	    	// Not sure how to advertise
+	    	// gecko_cmd_le_gap_start_advertising(HANDLE_DEMO, le_gap_general_discoverable, le_gap_undirected_connectable);
 
 			/* Start general advertising and enable connections. */
-			gecko_cmd_le_gap_start_advertising(0, le_gap_general_discoverable, le_gap_connectable_scannable);
+			gecko_cmd_le_gap_start_advertising(HANDLE_DEMO, le_gap_general_discoverable, le_gap_connectable_scannable);
 			/*  Start advertising non-connectable packets */
 			bcnSetupAdvBeaconing();
-			startObserving(320, 320);
+			startObserving(320*12, 320);
 
 			break;
 
@@ -779,12 +1059,17 @@ void appMain(gecko_configuration_t *pconfig)
 		  case gecko_evt_hardware_soft_timer_id:
 		  {
 			  uint32_t ts = ts_ms();
-			  if (ts>next_minute) next_minute+= 60000;
+#ifdef ENCOUNTER
+			  if (ts>next_minute) update_next_minute();
+#endif
 
 			  switch(evt->data.evt_hardware_soft_timer.handle) {
 			  case HANDLE_ADV:
 				  newRandAddress();
-				  flash_store();
+				  if (write_flash) flash_store();
+				  break;
+			  case HANDLE_UPDATE_KEY:
+				  update_adv_key();
 				  break;
 			  case HANDLE_UART:
 			  {
@@ -806,9 +1091,29 @@ void appMain(gecko_configuration_t *pconfig)
 		  }
 		  case gecko_evt_le_connection_opened_id:
 
-			printLog("connection opened\r\n");
+		    	_conn_handle = evt->data.evt_le_connection_opened.connection;
+		    	printLog("Connected\r\n");
+		    	_main_state = STATE_CONNECTED;
+
+		    	/* Request connection parameter update.
+		    	 * conn.interval min 20ms, max 40ms, slave latency 4 intervals,
+		    	 * supervision timeout 2 seconds
+		    	 * (These should be compliant with Apple Bluetooth Accessory Design Guidelines, both R7 and R8) */
+		    	gecko_cmd_le_connection_set_timing_parameters(_conn_handle, 24, 40, 0, 200, 0, 0xFFFF);
 
 			break;
+
+		  case gecko_evt_le_connection_parameters_id:
+		    	printLog("Conn.parameters: interval %u units, txsize %u\r\n", evt->data.evt_le_connection_parameters.interval, evt->data.evt_le_connection_parameters.txsize);
+		    	break;
+
+		  case gecko_evt_gatt_mtu_exchanged_id:
+				/* Calculate maximum data per one notification / write-without-response, this depends on the MTU.
+				 * up to ATT_MTU-3 bytes can be sent at once  */
+				_max_packet_size = evt->data.evt_gatt_mtu_exchanged.mtu - 3;
+				_min_packet_size = _max_packet_size; /* Try to send maximum length packets whenever possible */
+				printLog("MTU exchanged: %d\r\n", evt->data.evt_gatt_mtu_exchanged.mtu);
+				break;
 
 		  case gecko_evt_le_connection_closed_id:
 
@@ -819,16 +1124,55 @@ void appMain(gecko_configuration_t *pconfig)
 			  /* Enter to OTA DFU mode */
 			  gecko_cmd_system_reset(2);
 			} else {
-			  /* Restart advertising after client has disconnected */
-			  gecko_cmd_le_gap_start_advertising(0, le_gap_general_discoverable, le_gap_connectable_scannable);
+				// File transfer stuff
+		    	// printStats(&_sCounters);
+		    	reset_variables();
+		    	// SLEEP_SleepBlockEnd(sleepEM2); // Enable sleeping
+
+		    	/* Restart advertising after client has disconnected */
+		    	// gecko_cmd_le_gap_start_advertising(HANDLE_DEMO, le_gap_general_discoverable, le_gap_undirected_connectable);
+
+
+			  gecko_cmd_le_gap_start_advertising(HANDLE_DEMO, le_gap_general_discoverable, le_gap_connectable_scannable);
 			}
 			break;
+
+		  case gecko_evt_gatt_server_characteristic_status_id:
+		    {
+		    	struct gecko_msg_gatt_server_characteristic_status_evt_t *pStatus;
+		    	pStatus = &(evt->data.evt_gatt_server_characteristic_status);
+
+		    	printLog("gecko_evt_gatt_server_characteristic_status_id %d\r\n", pStatus->characteristic);
+
+		    	if (pStatus->characteristic == gattdb_gatt_spp_data) {
+		    		if (pStatus->status_flags == gatt_server_client_config) {
+		    			// Characteristic client configuration (CCC) for spp_data has been changed
+		    			if (pStatus->client_config_flags == gatt_notification) {
+		    				_main_state = STATE_SPP_MODE;
+		    				// SLEEP_SleepBlockBegin(sleepEM2); // Disable sleeping
+		    				printLog("SPP Mode ON\r\n");
+		    			} else {
+		    				printLog("SPP Mode OFF\r\n");
+		    				_main_state = STATE_CONNECTED;
+		    				// SLEEP_SleepBlockEnd(sleepEM2); // Enable sleeping
+		    			}
+
+		    		}
+		    	}
+		    }
+		    break;
+
 		  case gecko_evt_gatt_server_attribute_value_id:
 		  {
 			  if (evt->data.evt_gatt_server_attribute_value.attribute==gattdb_Read_Write) {
 				  int c = evt->data.evt_gatt_server_attribute_value.value.data[0];
+				  printLog("new attribute value %c\r\n", c);
 				  parse_command(c);
-				  // printLog("new attribute value %c\r\n", c);
+			  } else if (evt->data.evt_gatt_server_attribute_value.attribute==gattdb_gatt_spp_data) {
+				  char *msg;
+				  msg = (char *) evt->data.evt_gatt_server_attribute_value.value.data;
+				  printLog("new message: %s\r\n", msg);
+				  parse_command(c);
 			  }
 
 			  break;

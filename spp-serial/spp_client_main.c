@@ -207,7 +207,8 @@ static void send_spp_data()
  */
 void button_poll(void)
 {
-  if ((GPIO_PinInGet(BSP_BUTTON0_PORT, BSP_BUTTON0_PIN) == 0) || (GPIO_PinInGet(BSP_BUTTON1_PORT, BSP_BUTTON1_PIN) == 0)) {
+  if ((GPIO_PinInGet(BSP_BUTTON0_PORT, BSP_BUTTON0_PIN) == 0)) {
+  // if ((GPIO_PinInGet(BSP_BUTTON0_PORT, BSP_BUTTON0_PIN) == 0) || (GPIO_PinInGet(BSP_BUTTON1_PORT, BSP_BUTTON1_PIN) == 0)) {
     if (_conn_handle != 0xFF) {
       gecko_cmd_le_connection_close(_conn_handle);
       _main_state = DISCONNECTING;

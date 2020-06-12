@@ -19,6 +19,7 @@
 #include "bg_types.h"
 #include "native_gecko.h"
 #include "gatt_db.h"
+#include "em_rtcc.h"
 
 
 #include <stdio.h>
@@ -76,11 +77,15 @@ static void send_spp_data()
 		  c = RETARGET_ReadChar();
 
 		  if(c >= 0) {
+			  if (len==0) {
+				  printLog("Start to receive data\r\n");
+			  }
 			  data[len++] = (uint8)c;
 		  } else if(len == 0) {
 			  /* If the first ReadChar() fails then return immediately */
 			  return;
 		  } else {
+
 			  /* Speed optimization: if there are some bytes to be sent but the length is still
 			   * below the preferred minimum packet size, then wait for additional bytes
 			   * until timeout. Target is to put as many bytes as possible into each air packet */
@@ -96,17 +101,27 @@ static void send_spp_data()
 
 	if (len > 0) {
 		// Stack may return "out-of-memory" error if the local buffer is full -> in that case, just keep trying until the command succeeds
-		do {
-			result = gecko_cmd_gatt_server_send_characteristic_notification(_conn_handle, gattdb_gatt_spp_data, len, data)->result;
-			_sCounters.num_writes++;
-		} while(result == bg_err_out_of_memory);
-
-		if (result != 0) {
-			printLog("Unexpected error: %x\r\n", result);
-		} else {
-			_sCounters.num_pack_sent++;
-			_sCounters.num_bytes_sent += len;
-		}
+        int count = 0;
+        uint32_t start =  RTCC_CounterGet();
+        printLog("min packet size: %d\r\n", _min_packet_size);
+        do {
+			do {
+				len = sprintf((char *)data, "Hello %d\r\n", count);
+				len = _min_packet_size;
+				result = gecko_cmd_gatt_server_send_characteristic_notification(_conn_handle, gattdb_gatt_spp_data, len, data)->result;
+				_sCounters.num_writes++;
+			    // if (result>0) printLog("result %d\r\n", result);
+			} while(result == bg_err_out_of_memory);
+			count++;
+			if (result != 0) {
+				printLog("Unexpected error: %x\r\n", result);
+			} else {
+				_sCounters.num_pack_sent++;
+				_sCounters.num_bytes_sent += len;
+			}
+		// printLog("count %d\r\n", count);
+        } while(count<1000);
+        printLog("Done xfer %ld\r\n",  RTCC_CounterGet()-start);
 	}
 }
 
@@ -192,6 +207,8 @@ void spp_server_main(void)
     {
     	struct gecko_msg_gatt_server_characteristic_status_evt_t *pStatus;
     	pStatus = &(evt->data.evt_gatt_server_characteristic_status);
+
+    	printLog("gecko_evt_gatt_server_characteristic_status_id %d\r\n", pStatus->characteristic);
 
     	if (pStatus->characteristic == gattdb_gatt_spp_data) {
     		if (pStatus->status_flags == gatt_server_client_config) {

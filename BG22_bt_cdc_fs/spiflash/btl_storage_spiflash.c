@@ -1,3 +1,14 @@
+ /*******************************************************************************
+ *
+ * Copyright 2020 Sae Woo Nam
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ *
+ *
+ * Modified Silabs empty example to perform measurements of RSSI for exposure notification
+ *
+ *
+*/
 /***************************************************************************//**
  * @file
  * @brief Spiflash-backed storage plugin for Silicon Labs Bootloader.

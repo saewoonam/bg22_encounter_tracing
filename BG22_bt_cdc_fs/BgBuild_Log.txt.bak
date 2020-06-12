@@ -6,4 +6,7 @@ Executing: bgbuild (/Applications/Simplicity Studio.app/Contents/Eclipse/develop
 Standard output
 ALL OK
 
+Error/Warning output
+WARNING: 292bd3d214ff45ed934355d125edb721 length attribute is 4 but actual value length is 1. 4 will be used.
+
 

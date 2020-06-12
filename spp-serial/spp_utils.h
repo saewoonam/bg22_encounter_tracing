@@ -10,11 +10,11 @@ extern "C" {
 
 typedef struct
 {
-	uint32 num_pack_sent;
-	uint32 num_bytes_sent;
-	uint32 num_pack_received;
-	uint32 num_bytes_received;
-	uint32 num_writes; /* Total number of send attempts */
+	uint32_t num_pack_sent;
+	uint32_t num_bytes_sent;
+	uint32_t num_pack_received;
+	uint32_t num_bytes_received;
+	uint32_t num_writes; /* Total number of send attempts */
 } tsCounters;
 
 /*
