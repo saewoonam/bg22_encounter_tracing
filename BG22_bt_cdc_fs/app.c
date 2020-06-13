@@ -95,6 +95,7 @@ typedef struct
 	uint32_t num_pack_received;
 	uint32_t num_bytes_received;
 	uint32_t num_writes; /* Total number of send attempts */
+	uint32_t bad_mem_reads;
 } tsCounters;
 
 tsCounters _sCounters;
@@ -149,6 +150,8 @@ static uint8_t boot_to_dfu = 0;
 
 static bool output_serial = false;
 static bool write_flash = false;
+static bool sending_ota = false;
+
 uint32_t encounter_count = 0;
 
 uint8_t private_key[32];
@@ -523,7 +526,6 @@ void test_write_flash() {
 }
 void store_event(uint8_t *event) {
     CORE_DECLARE_IRQ_STATE;
-
     CORE_ENTER_ATOMIC();
 
 	if (encounter_count<(1<<(20-5))) {
@@ -575,6 +577,44 @@ void send_ota_uint8(uint8_t data) {
 	} while(result == bg_err_out_of_memory);
 }
 
+void send_chunk(uint32_t index) {
+	uint32_t max;
+	uint32_t len = encounter_count<<5;
+	uint8 data[256];
+	uint16 result;
+    // check if index is in range
+	// printLog("send_chunk index: %ld\r\n", index);
+	max = len/240;
+	if ((len%240)== 0) {
+		max = max-1;
+	}
+	if (index > max) {
+		// send over nothing because index is too high return nothing but the index
+		memcpy(data, &index, 4);
+		do {
+			result = gecko_cmd_gatt_server_send_characteristic_notification(_conn_handle, gattdb_gatt_spp_data, 4, data)->result;
+		} while(result == bg_err_out_of_memory);
+	} else {
+		// send over data... two cases... full chunk and partial chunk (240 bytes)
+		memcpy(data, &index, 4);
+		// figure out actual size of the packet to send... usually 240 except at the end
+		int xfer_len = 240;
+		if (index==max) {
+			// this is likely a partial
+			xfer_len = len%240;
+			if (xfer_len==0) xfer_len=240;
+		}
+		// Figure out starting point in memory
+		uint32_t addr = 240*index;
+		do {
+			xfer_len += 4;  // Add length of packet number
+			int32_t retCode = storage_readRaw(addr, data+4, xfer_len);
+			if (retCode) _sCounters.bad_mem_reads++;
+			result = gecko_cmd_gatt_server_send_characteristic_notification(_conn_handle, gattdb_gatt_spp_data, xfer_len, data)->result;
+			_sCounters.num_writes++;
+		} while(result == bg_err_out_of_memory);
+	}
+}
 void send_data()
 {
 	uint32_t len = encounter_count<<5;
@@ -609,7 +649,7 @@ void send_data()
         len -= xfer_len;
     	// printLog("addr: %ld, len: %ld\r\n", addr, len);
 	}
-    printLog("Done xfer %ld\r\n",  ts_ms()-start);
+    printLog("Done xfer time:%ld\r\n",  ts_ms()-start);
 	printLog("number of bad memory reads in xfer: %d\r\n", bad);
 
 }
@@ -618,6 +658,27 @@ uint32_t em(uint32_t t) {
 	return ((t-offset_time) / 1000 + epochtimesync)/60;
 }
 
+void set_name(uint8_t *name) {
+	// uint8_t buffer[255];
+	/*
+	struct gecko_msg_gatt_server_read_attribute_value_rsp_t *result;
+	result = gecko_cmd_gatt_server_read_attribute_value(gattdb_device_name, 0);
+	printLog("%d, %d\r\n",  result->result, result->value.len);
+	memset(buffer, 0, 255);
+	memcpy(buffer, result->value.data, result->value.len);
+	printLog("name: %s\r\n", buffer);
+	memset(buffer, '0', 8);
+	printLog("test zero pad:%08d\r\n", 0);
+	*/
+	gecko_cmd_gatt_server_write_attribute_value(gattdb_device_name, 0, 8, name);
+	/*
+	result = gecko_cmd_gatt_server_read_attribute_value(gattdb_device_name, 0);
+	printLog("result: %d, %d\r\n",  result->result, result->value.len);
+	memset(buffer, 0, 255);
+	memcpy(buffer, result->value.data, result->value.len);
+	printLog("name: %s\r\n", buffer);
+	*/
+}
 
 const char *version_str = "Version: " __DATE__ " " __TIME__;
 void parse_command(char c) {
@@ -646,7 +707,16 @@ void parse_command(char c) {
 	}
 	case 'f':{
 		printLog("Trying to send data ota\r\n");
-		send_data();  // over bluetooth
+		// SLEEP_SleepBlockBegin(sleepEM2); // Disable sleeping
+		//send_data();  // over bluetooth
+		// SLEEP_SleepBlockEnd(sleepEM2); // Enable sleeping
+        sending_ota = true;
+
+        break;
+	}
+	case 'F':{
+		printLog("Set data ota false\r\n");
+        sending_ota = false;
         break;
 	}
 	case 'G':{
@@ -664,16 +734,28 @@ void parse_command(char c) {
 		// printLog("bad: %d\r\n", bad);
         break;
 	}
-	case 'w':{
-		write_flash = true;
-		printLog("Start writing to flash\r\n");
-		uint8_t blank[32];
-		memset(blank, 0, 32);
-		store_event(blank);
-		if (mode==MODE_ENCOUNTER) {
-			store_event(blank);
+	case 'I':{
+		uint8_t value=0;
+
+		if (write_flash) {
+			value = 1;
 		}
-		store_time();
+		send_ota_uint8(value);
+		printLog("sent write_flash value: %d\r\n", write_flash);
+		break;
+	}
+	case 'w':{
+		if (!write_flash) {
+			write_flash = true;
+			printLog("Start writing to flash\r\n");
+			uint8_t blank[32];
+			memset(blank, 0, 32);
+			store_event(blank);
+			if (mode==MODE_ENCOUNTER) {
+				store_event(blank);
+			}
+			store_time();
+		}
         break;
 	}
 	case 's':{
@@ -734,7 +816,13 @@ void parse_command(char c) {
 		break;
 	}
 
-
+	case 'N': {
+		uint8_t *new_name;
+		new_name = (uint8_t *) gecko_cmd_gatt_server_read_attribute_value(gattdb_gatt_spp_data,0 )->value.data;
+		set_name(new_name);
+		printLog("set new name\r\n");
+		break;
+	}
     case 'h':
         printLog("%s\r\n", version_str);
         break;
@@ -840,6 +928,7 @@ void process_scan_encounter(struct gecko_cmd_packet* evt) {
 #ifdef SCAN_DEBUG
     printk("\tCreate new encounter: mask_idx: %ld\n", c_fifo_last_idx & IDX_MASK);
 #endif
+    		// printLog("first saewoo_hack: %d\r\n", saewoo_hack);
             current_encounter = encounters + (c_fifo_last_idx & IDX_MASK);
             memset((uint8_t *)current_encounter, 0, 64);  // clear all values
             memcpy(current_encounter->mac, mac_addr, 6);
@@ -863,23 +952,32 @@ void process_scan_encounter(struct gecko_cmd_packet* evt) {
             int old_n = current_encounter->rssi_data[saewoo_hack].n;
             int n = old_n + 1;
             current_encounter->rssi_data[saewoo_hack].n = n;
-            if (rssi > current_encounter->rssi_data[saewoo_hack].max) {
+            if (old_n == 0) {  // there could be a rollover problem here...  it will erase data
+            	// printLog("saewoo_hack: %d\r\n", saewoo_hack);
                 current_encounter->rssi_data[saewoo_hack].max = rssi;
-            }
-            if (rssi < current_encounter->rssi_data[saewoo_hack].max) {
                 current_encounter->rssi_data[saewoo_hack].min = rssi;
+                current_encounter->rssi_data[saewoo_hack].mean = rssi;
+                current_encounter->rssi_data[saewoo_hack].var = 0;
+            } else {
+				if (rssi > current_encounter->rssi_data[saewoo_hack].max) {
+					current_encounter->rssi_data[saewoo_hack].max = rssi;
+				}
+				if (rssi < current_encounter->rssi_data[saewoo_hack].max) {
+					current_encounter->rssi_data[saewoo_hack].min = rssi;
+				}
+	#ifdef SCAN_DEBUG
+		printk("\tcompute new mean:old_n, n:%d, %d\n",old_n, n );
+	#endif
+				if (n>0) {
+					int mean = current_encounter->rssi_data[saewoo_hack].mean;
+					int new_mean = mean + (rssi - mean + n/2)/n;
+					current_encounter->rssi_data[saewoo_hack].mean = new_mean;
+					current_encounter->rssi_data[saewoo_hack].var += (rssi-new_mean)*(rssi-mean);
+				}  // otherwise, 255 interactions in 1 minute... It has rolled over... don't computer new stuff
+				current_encounter->last_time = sec_timestamp;
+				current_encounter->minute = epoch_minute;
+
             }
-#ifdef SCAN_DEBUG
-    printk("\tcompute new mean:old_n, n:%d, %d\n",old_n, n );
-#endif
-            if (n>0) {
-                int mean = current_encounter->rssi_data[saewoo_hack].mean;
-                int new_mean = mean + (rssi - mean + n/2)/n;
-                current_encounter->rssi_data[saewoo_hack].mean = new_mean;
-                current_encounter->rssi_data[saewoo_hack].var += (rssi-new_mean)*(rssi-mean);
-            }  // otherwise, 255 interactions in 1 minute... It has rolled over... don't computer new stuff
-            current_encounter->last_time = sec_timestamp;
-            current_encounter->minute = epoch_minute;
         }
         // printLog("text:rssi, ch: %d, %d\r\n", rssi, channel);
 #ifdef SCAN_DEBUG
@@ -962,6 +1060,7 @@ void flash_store(void) {
         }
     }
 }
+
 
 /* Main application */
 void appMain(gecko_configuration_t *pconfig)
@@ -1104,7 +1203,7 @@ void appMain(gecko_configuration_t *pconfig)
 			break;
 
 		  case gecko_evt_le_connection_parameters_id:
-		    	printLog("Conn.parameters: interval %u units, txsize %u\r\n", evt->data.evt_le_connection_parameters.interval, evt->data.evt_le_connection_parameters.txsize);
+		    	// printLog("Conn.parameters: interval %u units, txsize %u\r\n", evt->data.evt_le_connection_parameters.interval, evt->data.evt_le_connection_parameters.txsize);
 		    	break;
 
 		  case gecko_evt_gatt_mtu_exchanged_id:
@@ -1166,13 +1265,20 @@ void appMain(gecko_configuration_t *pconfig)
 		  {
 			  if (evt->data.evt_gatt_server_attribute_value.attribute==gattdb_Read_Write) {
 				  int c = evt->data.evt_gatt_server_attribute_value.value.data[0];
-				  printLog("new attribute value %c\r\n", c);
+				  printLog("new rw value %c\r\n", c);
 				  parse_command(c);
 			  } else if (evt->data.evt_gatt_server_attribute_value.attribute==gattdb_gatt_spp_data) {
-				  char *msg;
-				  msg = (char *) evt->data.evt_gatt_server_attribute_value.value.data;
-				  printLog("new message: %s\r\n", msg);
-				  parse_command(c);
+				  if (sending_ota) {
+					  uint32_t *index;
+					  index = (uint32_t *) evt->data.evt_gatt_server_attribute_value.value.data;
+					  // printLog("Got request for data, len %d, idx: %ld\r\n", evt->data.evt_gatt_server_attribute_value.value.len, *index);
+					  send_chunk(*index);
+				  } else {
+					  char *msg;
+					  msg = (char *) evt->data.evt_gatt_server_attribute_value.value.data;
+					  printLog("new message: %s\r\n", msg);
+				  }
+				  // parse_command(c);
 			  }
 
 			  break;
