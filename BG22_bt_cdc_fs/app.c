@@ -48,6 +48,18 @@
 #include "crypto/x25519-cortex-m4.h"
 #include "sleep.h"
 
+/* button */
+#include "em_gpio.h"
+#include "gpiointerrupt.h"
+/* battery */
+#include "em_device.h"
+#include "em_cmu.h"
+#include "em_adc.h"
+
+/* Definitions of external signals */
+#define BUTTON_PRESSED (1 << 0)
+#define BUTTON_RELEASED (1 << 1)
+
 /*
  *
 #include "retargetserial.h"
@@ -151,8 +163,11 @@ static uint8_t boot_to_dfu = 0;
 static bool output_serial = false;
 static bool write_flash = false;
 static bool sending_ota = false;
+static int clicks = 0;
+static int flashes = 0;
 
 uint32_t encounter_count = 0;
+uint32_t untransferred_start = 0;
 
 uint8_t private_key[32];
 uint8_t public_key[32];
@@ -168,7 +183,7 @@ enum
 };
 enum
 {
-  HANDLE_ADV, HANDLE_UART, HANDLE_UPDATE_KEY
+  HANDLE_ADV, HANDLE_UART, HANDLE_UPDATE_KEY, HANDLE_LED, HANDLE_CLICK
 };
 
 struct
@@ -374,6 +389,7 @@ void bcnSetupAdvBeaconing(void)
   // gecko_cmd_hardware_set_soft_timer(32768*60,HANDLE_ADV,0);
   gecko_cmd_hardware_set_soft_timer(32768,HANDLE_UPDATE_KEY,0);
   //gecko_cmd_hardware_set_soft_timer(32768>>2,HANDLE_UART,0);
+  // gecko_cmd_hardware_set_soft_timer(32768,HANDLE_LED,0);
 
 }
 
@@ -524,6 +540,24 @@ void test_write_flash() {
 	printLog("storage_writeRaw: %ld\r\n", retCode);
     send32bytes(buffer);
 }
+void flash_erase() {
+	printLog("Trying to erase\r\n");
+	int num_sectors = encounter_count >> 7;
+	if (4095 & (encounter_count<<5)) num_sectors++;
+	int32_t retCode = storage_eraseRaw(0, num_sectors<<12);
+    printLog("erase size: %d\r\n", num_sectors<<12);
+	// int32_t retCode = storage_eraseRaw(0, encounter_count<<5);
+	// int32_t retCode = storage_eraseRaw(0, 1<<20);
+	if (retCode) {
+		printLog("Problem with erasing flash. %ld\r\n", retCode);
+	} else {
+		encounter_count = 0;
+		gecko_cmd_gatt_server_write_attribute_value(gattdb_count, 0, 4, (const uint8*) &encounter_count);
+		untransferred_start = 0;
+	}
+	bool empty = verifyErased(0, 1<<20);
+	printLog("verify erased: %d\r\n", empty);
+}
 void store_event(uint8_t *event) {
     CORE_DECLARE_IRQ_STATE;
     CORE_ENTER_ATOMIC();
@@ -582,10 +616,11 @@ void send_chunk(uint32_t index) {
 	uint32_t len = encounter_count<<5;
 	uint8 data[256];
 	uint16 result;
+	int chunk_size = _min_packet_size - 4;
     // check if index is in range
 	// printLog("send_chunk index: %ld\r\n", index);
-	max = len/240;
-	if ((len%240)== 0) {
+	max = len/chunk_size;
+	if ((len%chunk_size)== 0) {
 		max = max-1;
 	}
 	if (index > max) {
@@ -598,14 +633,14 @@ void send_chunk(uint32_t index) {
 		// send over data... two cases... full chunk and partial chunk (240 bytes)
 		memcpy(data, &index, 4);
 		// figure out actual size of the packet to send... usually 240 except at the end
-		int xfer_len = 240;
+		int xfer_len = chunk_size;
 		if (index==max) {
 			// this is likely a partial
-			xfer_len = len%240;
-			if (xfer_len==0) xfer_len=240;
+			xfer_len = len%chunk_size;
+			if (xfer_len==0) xfer_len=chunk_size;
 		}
 		// Figure out starting point in memory
-		uint32_t addr = 240*index;
+		uint32_t addr = chunk_size*index;
 		do {
 			xfer_len += 4;  // Add length of packet number
 			int32_t retCode = storage_readRaw(addr, data+4, xfer_len);
@@ -775,6 +810,11 @@ void parse_command(char c) {
 		send_ota_uint32(ts);
 		send_ota_uint32(time_overflow);
 		printLog("ts, overflow: %ld, %ld\r\n", ts, time_overflow);
+		break;
+	}
+	case 'C': {
+		flash_erase();
+		if (encounter_count==0) printLog("Flash is empty\r\n");
 		break;
 	}
 	case 'o': {
@@ -1061,6 +1101,95 @@ void flash_store(void) {
     }
 }
 
+static void button_callback(const uint8_t pin)
+{
+  if (pin == BSP_BUTTON0_PIN) {
+    /* when input is high, the button was released */
+    if (GPIO_PinInGet(BSP_BUTTON0_PORT,BSP_BUTTON0_PIN)) {
+        gecko_external_signal(BUTTON_RELEASED);
+    }
+    /* when input is low, the button was pressed*/
+    else {
+        gecko_external_signal(BUTTON_PRESSED);
+    }
+  }
+}
+
+void init_GPIO(void) {
+	/* Initialize GPIO interrupt handler */
+	GPIOINT_Init();
+
+	/* Set the pin of Push Button 0 as input with pull-up resistor */
+	GPIO_PinModeSet( BSP_BUTTON0_PORT, BSP_BUTTON0_PIN, HAL_GPIO_MODE_INPUT_PULL_FILTER, HAL_GPIO_DOUT_HIGH );
+
+	/* Enable interrupt on Push Button 0 */
+	GPIO_ExtIntConfig(BSP_BUTTON0_PORT, BSP_BUTTON0_PIN, BSP_BUTTON0_PIN, true, true, true);
+
+	/* Register callback for Push Button 0 */
+	GPIOINT_CallbackRegister(BSP_BUTTON0_PIN, button_callback);
+}
+/**
+ * @brief setup_leds
+ * Configure LED pins as output
+ */
+static void init_leds(void) {
+  GPIO_PinModeSet(BSP_LED0_PORT, BSP_LED0_PIN, gpioModePushPull, 0);
+  // GPIO_PinModeSet(BSP_LED1_PORT, BSP_LED1_PIN, gpioModePushPull, 0);
+}
+
+/**
+ * @brief get_leds
+ * Get LED statuses as two least significant bits of a return byte.
+ * @return uint8_t LED status byte.
+ */
+static inline uint8_t get_leds(void) {
+    return GPIO_PinOutGet(BSP_LED0_PORT, BSP_LED0_PIN);
+    // return ((GPIO_PinOutGet(BSP_LED1_PORT, BSP_LED1_PIN) << 1) | GPIO_PinOutGet(BSP_LED0_PORT, BSP_LED0_PIN));
+}
+
+/**
+ * @brief LED control function
+ * bit 0 = LED0
+ * bit 1 = LED1
+ * bits 2-7 = don't care
+ */
+static void set_leds(uint8_t control_byte) {
+
+  /* LED 0 control */
+  if ((control_byte & 0x01) == 1) {
+    GPIO_PinOutSet(BSP_LED0_PORT, BSP_LED0_PIN);
+  } else {
+    GPIO_PinOutClear(BSP_LED0_PORT, BSP_LED0_PIN);
+  }
+
+  /* LED 1 control
+  if (((control_byte >> 1) & 0x01) == 1) {
+    GPIO_PinOutSet(BSP_LED1_PORT, BSP_LED1_PIN);
+  } else {
+    GPIO_PinOutClear(BSP_LED1_PORT, BSP_LED1_PIN);
+  }
+  */
+}
+
+void led_flash(int n) {
+	flashes = n;
+	if (n==0) {
+		gecko_cmd_hardware_set_soft_timer(0,HANDLE_LED,0);
+	} else {
+		if (get_leds()) {
+		  // led is on, so turn it off
+		  set_leds(0);
+		  printLog("LED OFF\r\n");
+		  flashes--;
+		  if (flashes) gecko_cmd_hardware_set_soft_timer(6000, HANDLE_LED, 1);
+		  else gecko_cmd_hardware_set_soft_timer(0,HANDLE_LED,0);
+		} else {
+		    printLog("LED ON\r\n");
+		    set_leds(1);
+		    gecko_cmd_hardware_set_soft_timer(3000, HANDLE_LED, 1);
+		}
+	}
+}
 
 /* Main application */
 void appMain(gecko_configuration_t *pconfig)
@@ -1071,6 +1200,8 @@ void appMain(gecko_configuration_t *pconfig)
 
   /* Initialize debug prints. Note: debug prints are off by default. See DEBUG_LEVEL in app.h */
   initLog();
+  init_GPIO();
+  init_leds();
 
   /* Initialize stack */
   gecko_init(pconfig);
@@ -1143,8 +1274,23 @@ void appMain(gecko_configuration_t *pconfig)
 			/*  Start advertising non-connectable packets */
 			bcnSetupAdvBeaconing();
 			startObserving(320*12, 320);
-
 			break;
+
+	      case gecko_evt_system_external_signal_id:
+
+	        if (evt->data.evt_system_external_signal.extsignals & BUTTON_PRESSED) {
+	        	printLog("Button Pressed\r\n");
+	        }
+
+	        if (evt->data.evt_system_external_signal.extsignals & BUTTON_RELEASED) {
+	        	printLog("Button released\r\n");
+	        	clicks += 1;
+	        	gecko_cmd_hardware_set_soft_timer(32768>>2,HANDLE_CLICK,0);
+
+	        }
+
+	        break;
+
 
 		  case gecko_evt_le_gap_extended_scan_response_id: {
 			  // printLog("scan event\r\n");
@@ -1170,7 +1316,37 @@ void appMain(gecko_configuration_t *pconfig)
 			  case HANDLE_UPDATE_KEY:
 				  update_adv_key();
 				  break;
-			  case HANDLE_UART:
+			  case HANDLE_LED:
+				  // toggle state of led
+				  printLog("Handle_LED: %d\r\n", flashes);
+				  led_flash(flashes);
+				  break;
+			  case HANDLE_CLICK:
+				  // handle number of clicks
+				  switch (clicks) {
+				  case 1:
+					  printLog("Single click\r\n");
+					  led_flash(1);
+					  write_flash = true;
+					  // gecko_cmd_hardware_set_soft_timer(0,HANDLE_CLICK,0);
+					  break;
+				  case 2:
+					  printLog("Double click\r\n");
+					  led_flash(2);
+					  write_flash = false;
+					  //gecko_cmd_hardware_set_soft_timer(0,HANDLE_CLICK,0);
+					  break;
+				  case 0:
+					  gecko_cmd_hardware_set_soft_timer(0,HANDLE_CLICK,0);
+					  break;
+				  default:
+					  printLog("clicks %d\r\n", clicks);
+				  }
+				  // reset click counter
+
+				  clicks = 0;
+				  break;
+			  case HANDLE_UART:  // not used
 			  {
 				  int c = getchar();
 				  // printLog("Handle UART %d\r\n", c);
@@ -1210,7 +1386,7 @@ void appMain(gecko_configuration_t *pconfig)
 				/* Calculate maximum data per one notification / write-without-response, this depends on the MTU.
 				 * up to ATT_MTU-3 bytes can be sent at once  */
 				_max_packet_size = evt->data.evt_gatt_mtu_exchanged.mtu - 3;
-				_min_packet_size = _max_packet_size; /* Try to send maximum length packets whenever possible */
+				_min_packet_size = _max_packet_size & 0xFC; // make 32bit wide /* Try to send maximum length packets whenever possible */
 				printLog("MTU exchanged: %d\r\n", evt->data.evt_gatt_mtu_exchanged.mtu);
 				break;
 

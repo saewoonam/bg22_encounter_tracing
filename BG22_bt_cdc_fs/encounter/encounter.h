@@ -2,7 +2,7 @@
 #ifndef ENCOUNTER_H
 #define ENCOUNTER_H
 
-#define IDX_MASK        15
+#define IDX_MASK       63
 
 struct Ch_data {
     uint8_t mean;
