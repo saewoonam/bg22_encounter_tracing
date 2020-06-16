@@ -78,8 +78,8 @@
 
 #include "encounter/encounter.h"
 Encounter_record encounters[IDX_MASK+1];
-uint32_t c_fifo_last_idx;
-uint32_t p_fifo_last_idx;
+uint32_t c_fifo_last_idx=0;
+uint32_t p_fifo_last_idx=0;
 #define		uart_printf		printLog
 #define		printk			printLog
 #endif
@@ -555,8 +555,8 @@ void flash_erase() {
 		gecko_cmd_gatt_server_write_attribute_value(gattdb_count, 0, 4, (const uint8*) &encounter_count);
 		untransferred_start = 0;
 	}
-	bool empty = verifyErased(0, 1<<20);
-	printLog("verify erased: %d\r\n", empty);
+	// bool empty = verifyErased(0, 1<<20);
+	// printLog("verify erased: %d\r\n", empty);
 }
 void store_event(uint8_t *event) {
     CORE_DECLARE_IRQ_STATE;
@@ -714,6 +714,18 @@ void set_name(uint8_t *name) {
 	printLog("name: %s\r\n", buffer);
 	*/
 }
+void start_writing_flash() {
+	write_flash = true;
+	p_fifo_last_idx = c_fifo_last_idx;
+	printLog("Start writing to flash\r\n");
+	uint8_t blank[32];
+	memset(blank, 0, 32);
+	store_event(blank);
+	if (mode==MODE_ENCOUNTER) {
+		store_event(blank);
+	}
+	store_time();
+}
 
 const char *version_str = "Version: " __DATE__ " " __TIME__;
 void parse_command(char c) {
@@ -781,15 +793,7 @@ void parse_command(char c) {
 	}
 	case 'w':{
 		if (!write_flash) {
-			write_flash = true;
-			printLog("Start writing to flash\r\n");
-			uint8_t blank[32];
-			memset(blank, 0, 32);
-			store_event(blank);
-			if (mode==MODE_ENCOUNTER) {
-				store_event(blank);
-			}
-			store_time();
+			start_writing_flash();
 		}
         break;
 	}
@@ -1327,7 +1331,8 @@ void appMain(gecko_configuration_t *pconfig)
 				  case 1:
 					  printLog("Single click\r\n");
 					  led_flash(1);
-					  write_flash = true;
+					  start_writing_flash();
+					  //write_flash = true;
 					  // gecko_cmd_hardware_set_soft_timer(0,HANDLE_CLICK,0);
 					  break;
 				  case 2:
