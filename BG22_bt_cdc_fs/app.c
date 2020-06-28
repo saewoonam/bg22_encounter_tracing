@@ -59,7 +59,8 @@
 /* Definitions of external signals */
 #define BUTTON_PRESSED (1 << 0)
 #define BUTTON_RELEASED (1 << 1)
-
+#define LOG_MARK (1<<2)
+#define LOG_UNMARK (1<<3)
 /*
  *
 #include "retargetserial.h"
@@ -564,6 +565,10 @@ void store_event(uint8_t *event) {
 
 	if (encounter_count<(1<<(20-5))) {
 		int32_t retCode = storage_writeRaw(encounter_count<<5, event, 32);
+		/*for (int i=0; i<32; i++) {
+			printLog("%02X ", event[i]);
+		}
+		printLog("\r\n");*/
 		if (retCode) {
 			printLog("Error storing to flash %ld\r\n", retCode);
 		}
@@ -593,6 +598,16 @@ void store_time() {
     store_event(time_evt);
 }
 
+void send_ota_msg(char *msg) {
+	uint32_t len = strlen(msg);
+	uint16 result;
+    printLog("Try to send_ota_msg: %s\r\n", msg);
+
+	do {
+		result = gecko_cmd_gatt_server_send_characteristic_notification(_conn_handle, gattdb_gatt_spp_data, len, (uint8_t *) msg)->result;
+	} while(result == bg_err_out_of_memory);
+
+}
 void send_ota_uint32(uint32_t data) {
 	uint32_t len = 4;
 	uint16 result;
@@ -618,7 +633,7 @@ void send_chunk(uint32_t index) {
 	uint16 result;
 	int chunk_size = _min_packet_size - 4;
     // check if index is in range
-	// printLog("send_chunk index: %ld\r\n", index);
+	printLog("send_chunk index: %ld, max_chunk_size %d\r\n", index, chunk_size);
 	max = len/chunk_size;
 	if ((len%chunk_size)== 0) {
 		max = max-1;
@@ -648,6 +663,10 @@ void send_chunk(uint32_t index) {
 			result = gecko_cmd_gatt_server_send_characteristic_notification(_conn_handle, gattdb_gatt_spp_data, xfer_len, data)->result;
 			_sCounters.num_writes++;
 		} while(result == bg_err_out_of_memory);
+		for(int i=0; i<xfer_len; i++) {
+			printLog("%02X ", *(data+4+i));
+		}
+		printLog("\r\n");
 	}
 }
 void send_data()
@@ -693,6 +712,27 @@ uint32_t em(uint32_t t) {
 	return ((t-offset_time) / 1000 + epochtimesync)/60;
 }
 
+void read_name_ps(void) {
+	uint16 k = 0x4000;
+	uint8_t *name;
+	struct gecko_msg_flash_ps_load_rsp_t *result;
+    result = gecko_cmd_flash_ps_load(k);
+    printLog("read_name_ps 0x%04X\r\n", result->result);
+    if (result->result==0) {
+    	if (result->value.len==8) {
+    		name = result->value.data;
+    		gecko_cmd_gatt_server_write_attribute_value(gattdb_device_name, 0, 8, name);
+    	} else { printLog("Problem readinig BT name\r\n"); }
+    }
+}
+
+void write_name_ps(uint8_t *name) {
+	uint16_t key = 0x4000;
+	int result = gecko_cmd_flash_ps_save(key, 8, name)->result;
+    printLog("write_name_ps 0x%04X\r\n", result);
+
+}
+
 void set_name(uint8_t *name) {
 	// uint8_t buffer[255];
 	/*
@@ -705,6 +745,7 @@ void set_name(uint8_t *name) {
 	memset(buffer, '0', 8);
 	printLog("test zero pad:%08d\r\n", 0);
 	*/
+	write_name_ps(name);
 	gecko_cmd_gatt_server_write_attribute_value(gattdb_device_name, 0, 8, name);
 	/*
 	result = gecko_cmd_gatt_server_read_attribute_value(gattdb_device_name, 0);
@@ -728,6 +769,7 @@ void start_writing_flash() {
 }
 
 const char *version_str = "Version: " __DATE__ " " __TIME__;
+const char *ota_version = "1.0";
 void parse_command(char c) {
 	switch(c) {
 	case 'r':
@@ -753,7 +795,7 @@ void parse_command(char c) {
         break;
 	}
 	case 'f':{
-		printLog("Trying to send data ota\r\n");
+		printLog("mode: send data ota\r\n");
 		// SLEEP_SleepBlockBegin(sleepEM2); // Disable sleeping
 		//send_data();  // over bluetooth
 		// SLEEP_SleepBlockEnd(sleepEM2); // Enable sleeping
@@ -762,7 +804,7 @@ void parse_command(char c) {
         break;
 	}
 	case 'F':{
-		printLog("Set data ota false\r\n");
+		printLog("mode: Set data ota false\r\n");
         sending_ota = false;
         break;
 	}
@@ -818,7 +860,7 @@ void parse_command(char c) {
 	}
 	case 'C': {
 		flash_erase();
-		if (encounter_count==0) printLog("Flash is empty\r\n");
+		// if (encounter_count==0) printLog("Flash is empty\r\n");
 		break;
 	}
 	case 'o': {
@@ -833,6 +875,14 @@ void parse_command(char c) {
 		memcpy(time_evt+12, &offset_overflow, 4);
 	    store_event(time_evt);
 	    setup_next_minute();
+		break;
+	}
+	case 'B': {
+		uint16_t *scan_params;
+
+		scan_params = (uint16_t *) gecko_cmd_gatt_server_read_attribute_value(gattdb_gatt_spp_data,0 )->value.data;
+		printLog("Change bluetooth scanning parameters interval, window: %ud, %ud\r\n", scan_params[0], scan_params[1]);
+		startObserving(scan_params[0], scan_params[1]);
 		break;
 	}
 	case 'O': {
@@ -867,10 +917,21 @@ void parse_command(char c) {
 		printLog("set new name\r\n");
 		break;
 	}
+	case 'M': {
+        gecko_external_signal(LOG_MARK);
+        break;
+	}
+	case 'U': {
+        gecko_external_signal(LOG_UNMARK);
+        break;
+	}
     case 'h':
         printLog("%s\r\n", version_str);
         break;
-
+    case 'v': {
+        send_ota_msg((char *)ota_version);
+        break;
+    }
 	default:
 		break;
 	}
@@ -1214,7 +1275,7 @@ void appMain(gecko_configuration_t *pconfig)
   printLog("storage_init: %ld %ld\r\n", flash_ret, flash_size);
   determine_counts();
   test_encrypt_compare();
-
+  read_name_ps();
   while (1) {
     /* Event pointer for handling events */
     struct gecko_cmd_packet* evt;
@@ -1277,10 +1338,49 @@ void appMain(gecko_configuration_t *pconfig)
 			gecko_cmd_le_gap_start_advertising(HANDLE_DEMO, le_gap_general_discoverable, le_gap_connectable_scannable);
 			/*  Start advertising non-connectable packets */
 			bcnSetupAdvBeaconing();
+			// 2.4 seconds and 200ms
 			startObserving(320*12, 320);
 			break;
 
 	      case gecko_evt_system_external_signal_id:
+			if (evt->data.evt_system_external_signal.extsignals & LOG_MARK) {
+				printLog("MARK\r\n");
+			    Encounter_record *current_encounter;
+				uint32_t timestamp = ts_ms();
+		        if (timestamp>next_minute) update_next_minute();
+		        int sec_timestamp = (timestamp - (next_minute - 60000)) / 1000;
+		        uint32_t epoch_minute = ((timestamp-offset_time) / 1000 + epochtimesync)/60;
+
+                uint8_t mac_addr[6] = {0, 0, 0, 0, 0, 0};
+	            current_encounter = encounters + (c_fifo_last_idx & IDX_MASK);
+	            memset((uint8_t *)current_encounter, 0, 64);  // clear all values
+	            memcpy(current_encounter->mac, mac_addr, 6);
+	            current_encounter->first_time = sec_timestamp;
+	            current_encounter->last_time = sec_timestamp;
+	            current_encounter->minute = epoch_minute;
+	            current_encounter->flag = 0x07;
+	            memset(current_encounter->public_key, 1, 32);
+	            c_fifo_last_idx++;
+			}
+			if (evt->data.evt_system_external_signal.extsignals & LOG_UNMARK) {
+				printLog("UNMARK\r\n");
+			    Encounter_record *current_encounter;
+				uint32_t timestamp = ts_ms();
+		        if (timestamp>next_minute) update_next_minute();
+		        int sec_timestamp = (timestamp - (next_minute - 60000)) / 1000;
+		        uint32_t epoch_minute = ((timestamp-offset_time) / 1000 + epochtimesync)/60;
+
+                uint8_t mac_addr[6] = {1,1,1,1,1,1};
+	            current_encounter = encounters + (c_fifo_last_idx & IDX_MASK);
+	            memset((uint8_t *)current_encounter, 0, 64);  // clear all values
+	            memcpy(current_encounter->mac, mac_addr, 6);
+	            current_encounter->first_time = sec_timestamp;
+	            current_encounter->last_time = sec_timestamp;
+	            current_encounter->minute = epoch_minute;
+	            current_encounter->flag = 0x07;
+	            memset(current_encounter->public_key, 2, 32);
+	            c_fifo_last_idx++;
+			}
 
 	        if (evt->data.evt_system_external_signal.extsignals & BUTTON_PRESSED) {
 	        	printLog("Button Pressed\r\n");
@@ -1426,6 +1526,7 @@ void appMain(gecko_configuration_t *pconfig)
 
 		    	if (pStatus->characteristic == gattdb_gatt_spp_data) {
 		    		if (pStatus->status_flags == gatt_server_client_config) {
+		    			printLog("client_config_flags %d\r\n", pStatus->client_config_flags);
 		    			// Characteristic client configuration (CCC) for spp_data has been changed
 		    			if (pStatus->client_config_flags == gatt_notification) {
 		    				_main_state = STATE_SPP_MODE;
@@ -1451,16 +1552,38 @@ void appMain(gecko_configuration_t *pconfig)
 			  } else if (evt->data.evt_gatt_server_attribute_value.attribute==gattdb_gatt_spp_data) {
 				  if (sending_ota) {
 					  uint32_t *index;
-					  index = (uint32_t *) evt->data.evt_gatt_server_attribute_value.value.data;
-					  // printLog("Got request for data, len %d, idx: %ld\r\n", evt->data.evt_gatt_server_attribute_value.value.len, *index);
-					  send_chunk(*index);
+					  int len = evt->data.evt_gatt_server_attribute_value.value.len;
+					  if (len==4) {
+						  index = (uint32_t *) evt->data.evt_gatt_server_attribute_value.value.data;
+						  printLog("Got request for data, len %d, idx: %ld\r\n", evt->data.evt_gatt_server_attribute_value.value.len, *index);
+						  send_chunk(*index);
+					  } else { printLog("Recevied the wrong number of bytes: %d/4\r\n", len); }
 				  } else {
 					  char *msg;
 					  msg = (char *) evt->data.evt_gatt_server_attribute_value.value.data;
 					  printLog("new message: %s\r\n", msg);
 				  }
-				  // parse_command(c);
+			  } else if (evt->data.evt_gatt_server_attribute_value.attribute==gattdb_data_in) {
+
+
+				   if (sending_ota) {
+					  uint32_t *index;
+					  int len = evt->data.evt_gatt_server_attribute_value.value.len;
+					  if (len==4) {
+						  index = (uint32_t *) evt->data.evt_gatt_server_attribute_value.value.data;
+						  printLog("Got request for packet, len %d, idx: %ld\r\n", evt->data.evt_gatt_server_attribute_value.value.len, *index);
+						  send_chunk(*index);
+					  } else { printLog("Recevied the wrong number of bytes: %d/4\r\n", len); }
+				  } else {
+					  char *msg;
+					  msg = (char *) evt->data.evt_gatt_server_attribute_value.value.data;
+					  printLog("gatt_data_in new message: %s\r\n", msg);
+				  }
+
+				  printLog("gatt data_in\r\n");
 			  }
+			  // printLog("Done attribute_value_id\r\n");
+			  // parse_command(c);
 
 			  break;
 		  }
