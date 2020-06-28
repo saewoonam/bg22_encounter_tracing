@@ -633,7 +633,7 @@ void send_chunk(uint32_t index) {
 	uint16 result;
 	int chunk_size = _min_packet_size - 4;
     // check if index is in range
-	printLog("send_chunk index: %ld, max_chunk_size %d\r\n", index, chunk_size);
+	// printLog("send_chunk index: %ld, max_chunk_size %d\r\n", index, chunk_size);
 	max = len/chunk_size;
 	if ((len%chunk_size)== 0) {
 		max = max-1;
@@ -663,10 +663,13 @@ void send_chunk(uint32_t index) {
 			result = gecko_cmd_gatt_server_send_characteristic_notification(_conn_handle, gattdb_gatt_spp_data, xfer_len, data)->result;
 			_sCounters.num_writes++;
 		} while(result == bg_err_out_of_memory);
+		/*
+		 *
 		for(int i=0; i<xfer_len; i++) {
 			printLog("%02X ", *(data+4+i));
 		}
 		printLog("\r\n");
+		*/
 	}
 }
 void send_data()
@@ -822,6 +825,24 @@ void parse_command(char c) {
 
 		// printLog("bad: %d\r\n", bad);
         break;
+	}
+	case 'E':{
+		mode = MODE_ENCOUNTER;
+		write_flash = false;
+		printLog("Set to mode to ENCOUNTER\r\n");
+        break;
+	}
+	case 'R':{
+		mode = MODE_RAW;
+		write_flash = false;
+		printLog("Set to mode to RAW\r\n");
+        break;
+	}
+	case 'm':{
+		uint8_t value=mode;
+		send_ota_uint8(value);
+		printLog("sent mode value: %d\r\n", value);
+		break;
 	}
 	case 'I':{
 		uint8_t value=0;
@@ -1395,22 +1416,21 @@ void appMain(gecko_configuration_t *pconfig)
 
 	        break;
 
-
 		  case gecko_evt_le_gap_extended_scan_response_id: {
 			  // printLog("scan event\r\n");
-#ifdef ENCOUNTER
-			  process_scan_encounter(evt);
-#else
-			  process_scan(evt);
-#endif
-			break;
+			  if (mode==MODE_ENCOUNTER) {
+				  process_scan_encounter(evt);
+			  } else {
+				  process_scan(evt);
+			  }
+			  break;
 		  }
 		  case gecko_evt_hardware_soft_timer_id:
 		  {
 			  uint32_t ts = ts_ms();
-#ifdef ENCOUNTER
-			  if (ts>next_minute) update_next_minute();
-#endif
+			  if (mode==MODE_ENCOUNTER) {
+				  if (ts>next_minute) update_next_minute();
+			  }
 
 			  switch(evt->data.evt_hardware_soft_timer.handle) {
 			  case HANDLE_ADV:
@@ -1555,7 +1575,7 @@ void appMain(gecko_configuration_t *pconfig)
 					  int len = evt->data.evt_gatt_server_attribute_value.value.len;
 					  if (len==4) {
 						  index = (uint32_t *) evt->data.evt_gatt_server_attribute_value.value.data;
-						  printLog("Got request for data, len %d, idx: %ld\r\n", evt->data.evt_gatt_server_attribute_value.value.len, *index);
+						  // printLog("Got request for data, len %d, idx: %ld\r\n", evt->data.evt_gatt_server_attribute_value.value.len, *index);
 						  send_chunk(*index);
 					  } else { printLog("Recevied the wrong number of bytes: %d/4\r\n", len); }
 				  } else {
@@ -1571,7 +1591,7 @@ void appMain(gecko_configuration_t *pconfig)
 					  int len = evt->data.evt_gatt_server_attribute_value.value.len;
 					  if (len==4) {
 						  index = (uint32_t *) evt->data.evt_gatt_server_attribute_value.value.data;
-						  printLog("Got request for packet, len %d, idx: %ld\r\n", evt->data.evt_gatt_server_attribute_value.value.len, *index);
+						  // printLog("Got request for packet, len %d, idx: %ld\r\n", evt->data.evt_gatt_server_attribute_value.value.len, *index);
 						  send_chunk(*index);
 					  } else { printLog("Recevied the wrong number of bytes: %d/4\r\n", len); }
 				  } else {
