@@ -267,6 +267,15 @@ uint32_t ts_ms() {
 	return t_ms;
 }
 
+void wait(int wait) {
+	printLog("Start wait %d\r\n", wait);
+	uint32_t start = ts_ms();
+	while((ts_ms() - start)<wait) {
+		;
+	}
+	printLog("Done wait %d\r\n", wait);
+
+}
 uint32_t k_uptime_get() {
 	return ts_ms();
 }
@@ -476,6 +485,13 @@ void startObserving(uint16_t interval, uint16_t window) {
 	gecko_cmd_le_gap_start_discovery(le_gap_phy_1m,le_gap_discover_observation);
 }
 
+void setConnectionTiming(uint16_t *params) {
+	// Set connection parameters
+	if (_conn_handle < 0xFF) {
+		gecko_cmd_le_connection_set_timing_parameters(_conn_handle, params[0],
+				params[1], 0, params[2], 0, 0xFFFF);
+	}
+}
 
 uint8_t findServiceInAdvertisement(uint8_t *data, uint8_t len)
 {
@@ -681,30 +697,36 @@ void send_data()
     uint32_t start = ts_ms();
 	uint32_t addr=0;
 	int bad=0;
+    int max_data_len = xfer_len - 4;
+    int packet_index = 0;
 
 	printLog("packet xfer_len: %d\r\n", xfer_len);
 	printLog("len: %ld\r\n", len);
     while (len>0) {
-        // xfer_len = _min_packet_size;
-		if (len<_min_packet_size) xfer_len = len;
-
+		if (len <= max_data_len) xfer_len = len+4;
+		memcpy(data, &packet_index, 4);
+		printLog("sent packet_idx %d\r\n", packet_index);
+		packet_index++;
+		int32_t retCode = storage_readRaw(addr, data+4, xfer_len-4);
+		if (retCode)  bad++;
 		do {
-			// xfer_len = _min_packet_size;
-			int32_t retCode = storage_readRaw(addr, data, xfer_len);
-			if (retCode)  bad++;
 			result = gecko_cmd_gatt_server_send_characteristic_notification(_conn_handle, gattdb_gatt_spp_data, xfer_len, data)->result;
 			_sCounters.num_writes++;
+			printLog("send result: %u\r\n", result);
 		} while(result == bg_err_out_of_memory);
 
 		if (result != 0) {
 			printLog("Unexpected error: %x\r\n", result);
 		} else {
 			_sCounters.num_pack_sent++;
-			_sCounters.num_bytes_sent += xfer_len;
+			_sCounters.num_bytes_sent += (xfer_len-4);
 		}
         addr += xfer_len;
-        len -= xfer_len;
-    	// printLog("addr: %ld, len: %ld\r\n", addr, len);
+        len -= (xfer_len-4);
+    	printLog("addr: %ld, len: %ld\r\n", addr, len);
+    	if (packet_index%8 ==0) {
+    		// wait(500);
+    	}
 	}
     printLog("Done xfer time:%ld\r\n",  ts_ms()-start);
 	printLog("number of bad memory reads in xfer: %d\r\n", bad);
@@ -811,6 +833,22 @@ void parse_command(char c) {
         sending_ota = false;
         break;
 	}
+	case 't':{
+		printLog("mode: send data turbo\r\n");
+		// SLEEP_SleepBlockBegin(sleepEM2); // Disable sleeping
+		send_data();  // over bluetooth
+		// SLEEP_SleepBlockEnd(sleepEM2); // Enable sleeping
+        break;
+	}
+	case 'T':{
+		printLog("mode: place holder for end send turbo\r\n");
+        break;
+	}
+	case 'u':{
+		printLog("send mtu\r\n");
+		send_ota_uint8(_min_packet_size);
+        break;
+	}
 	case 'G':{
 		uint32_t addr=0;
 		uint8_t buffer[32];
@@ -904,6 +942,14 @@ void parse_command(char c) {
 		scan_params = (uint16_t *) gecko_cmd_gatt_server_read_attribute_value(gattdb_gatt_spp_data,0 )->value.data;
 		printLog("Change bluetooth scanning parameters interval, window: %u, %u\r\n", scan_params[0], scan_params[1]);
 		startObserving(scan_params[0], scan_params[1]);
+		break;
+	}
+	case 'P': {
+		uint16_t *conn_params;
+
+		conn_params = (uint16_t *) gecko_cmd_gatt_server_read_attribute_value(gattdb_gatt_spp_data,0 )->value.data;
+		printLog("Change bluetooth connection parameters min %u, max %u, timeout min %u\r\n", conn_params[0], conn_params[1], conn_params[2]);
+		setConnectionTiming(conn_params);
 		break;
 	}
 	case 'O': {
@@ -1499,12 +1545,20 @@ void appMain(gecko_configuration_t *pconfig)
 		    	 * conn.interval min 20ms, max 40ms, slave latency 4 intervals,
 		    	 * supervision timeout 2 seconds
 		    	 * (These should be compliant with Apple Bluetooth Accessory Design Guidelines, both R7 and R8) */
-		    	gecko_cmd_le_connection_set_timing_parameters(_conn_handle, 24, 40, 0, 200, 0, 0xFFFF);
+		    	// original
+		    	// gecko_cmd_le_connection_set_timing_parameters(_conn_handle, 24, 40, 0, 200, 0, 0xFFFF);
+		    	// actually 20ms and 40 ms
+		    	//gecko_cmd_le_connection_set_timing_parameters(_conn_handle, 16, 32, 0, 200, 0, 0xFFFF);
+		    	// 15ms, 30ms, 100ms
+		    	gecko_cmd_le_connection_set_timing_parameters(_conn_handle, 12, 24, 0, 10, 0, 0xFFFF);
 
 			break;
 
 		  case gecko_evt_le_connection_parameters_id:
-		    	// printLog("Conn.parameters: interval %u units, txsize %u\r\n", evt->data.evt_le_connection_parameters.interval, evt->data.evt_le_connection_parameters.txsize);
+		    	printLog("Conn.parameters: interval %u units, %u latency, txsize %u\r\n",
+		    			evt->data.evt_le_connection_parameters.interval,
+		    			evt->data.evt_le_connection_parameters.latency,
+						evt->data.evt_le_connection_parameters.txsize);
 		    	break;
 
 		  case gecko_evt_gatt_mtu_exchanged_id:
