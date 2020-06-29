@@ -902,7 +902,7 @@ void parse_command(char c) {
 		uint16_t *scan_params;
 
 		scan_params = (uint16_t *) gecko_cmd_gatt_server_read_attribute_value(gattdb_gatt_spp_data,0 )->value.data;
-		printLog("Change bluetooth scanning parameters interval, window: %ud, %ud\r\n", scan_params[0], scan_params[1]);
+		printLog("Change bluetooth scanning parameters interval, window: %u, %u\r\n", scan_params[0], scan_params[1]);
 		startObserving(scan_params[0], scan_params[1]);
 		break;
 	}

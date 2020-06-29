@@ -10410,228 +10410,228 @@ LOAD /Applications/Simplicity Studio.app/Contents/Eclipse/developer/toolchains/g
  .rodata.led_flash.str1.4
                 0x000000000003d968       0x14 ./app.o
  .rodata.parse_command.str1.4
-                0x000000000003d97c      0x20d ./app.o
- *fill*         0x000000000003db89        0x3 
+                0x000000000003d97c      0x209 ./app.o
+ *fill*         0x000000000003db85        0x3 
  .rodata.read_name_ps.str1.4
-                0x000000000003db8c       0x32 ./app.o
- *fill*         0x000000000003dbbe        0x2 
+                0x000000000003db88       0x32 ./app.o
+ *fill*         0x000000000003dbba        0x2 
  .rodata.send_ota_msg.str1.4
-                0x000000000003dbc0       0x1a ./app.o
- *fill*         0x000000000003dbda        0x2 
+                0x000000000003dbbc       0x1a ./app.o
+ *fill*         0x000000000003dbd6        0x2 
  .rodata.setup_next_minute.str1.4
-                0x000000000003dbdc       0x49 ./app.o
- *fill*         0x000000000003dc25        0x3 
+                0x000000000003dbd8       0x49 ./app.o
+ *fill*         0x000000000003dc21        0x3 
  .rodata.start_writing_flash.str1.4
-                0x000000000003dc28       0x18 ./app.o
+                0x000000000003dc24       0x18 ./app.o
  .rodata.store_event.str1.4
-                0x000000000003dc40       0x37 ./app.o
- *fill*         0x000000000003dc77        0x1 
+                0x000000000003dc3c       0x37 ./app.o
+ *fill*         0x000000000003dc73        0x1 
  .rodata.str1.4
-                0x000000000003dc78       0x22 ./app.o
- *fill*         0x000000000003dc9a        0x2 
+                0x000000000003dc74       0x22 ./app.o
+ *fill*         0x000000000003dc96        0x2 
  .rodata.test_encrypt_compare.str1.4
-                0x000000000003dc9c       0x36 ./app.o
- *fill*         0x000000000003dcd2        0x2 
+                0x000000000003dc98       0x36 ./app.o
+ *fill*         0x000000000003dcce        0x2 
  .rodata.write_name_ps.str1.4
-                0x000000000003dcd4       0x17 ./app.o
- *fill*         0x000000000003dceb        0x1 
+                0x000000000003dcd0       0x17 ./app.o
+ *fill*         0x000000000003dce7        0x1 
  .rodata.sl_app_properties
-                0x000000000003dcec       0x40 ./application_properties.o
-                0x000000000003dcec                sl_app_properties
+                0x000000000003dce8       0x40 ./application_properties.o
+                0x000000000003dce8                sl_app_properties
  .rodata.bg_gattdb_data
-                0x000000000003dd2c       0x34 ./gatt_db.o
-                0x000000000003dd2c                bg_gattdb_data
+                0x000000000003dd28       0x34 ./gatt_db.o
+                0x000000000003dd28                bg_gattdb_data
  .rodata.bg_gattdb_data_adv_uuid128_map
-                0x000000000003dd60       0x10 ./gatt_db.o
-                0x000000000003dd60                bg_gattdb_data_adv_uuid128_map
+                0x000000000003dd5c       0x10 ./gatt_db.o
+                0x000000000003dd5c                bg_gattdb_data_adv_uuid128_map
  .rodata.bg_gattdb_data_adv_uuid16_map
-                0x000000000003dd70        0x1 ./gatt_db.o
-                0x000000000003dd70                bg_gattdb_data_adv_uuid16_map
- *fill*         0x000000000003dd71        0x3 
+                0x000000000003dd6c        0x1 ./gatt_db.o
+                0x000000000003dd6c                bg_gattdb_data_adv_uuid16_map
+ *fill*         0x000000000003dd6d        0x3 
  .rodata.bg_gattdb_data_attribute_field_0
-                0x000000000003dd74        0x4 ./gatt_db.o
-                0x000000000003dd74                bg_gattdb_data_attribute_field_0
+                0x000000000003dd70        0x4 ./gatt_db.o
+                0x000000000003dd70                bg_gattdb_data_attribute_field_0
  .rodata.bg_gattdb_data_attribute_field_1
-                0x000000000003dd78        0x7 ./gatt_db.o
-                0x000000000003dd78                bg_gattdb_data_attribute_field_1
- *fill*         0x000000000003dd7f        0x1 
+                0x000000000003dd74        0x7 ./gatt_db.o
+                0x000000000003dd74                bg_gattdb_data_attribute_field_1
+ *fill*         0x000000000003dd7b        0x1 
  .rodata.bg_gattdb_data_attribute_field_10
-                0x000000000003dd80        0x8 ./gatt_db.o
-                0x000000000003dd80                bg_gattdb_data_attribute_field_10
+                0x000000000003dd7c        0x8 ./gatt_db.o
+                0x000000000003dd7c                bg_gattdb_data_attribute_field_10
  .rodata.bg_gattdb_data_attribute_field_11
-                0x000000000003dd88        0x7 ./gatt_db.o
-                0x000000000003dd88                bg_gattdb_data_attribute_field_11
- *fill*         0x000000000003dd8f        0x1 
+                0x000000000003dd84        0x7 ./gatt_db.o
+                0x000000000003dd84                bg_gattdb_data_attribute_field_11
+ *fill*         0x000000000003dd8b        0x1 
  .rodata.bg_gattdb_data_attribute_field_12
-                0x000000000003dd90        0x4 ./gatt_db.o
-                0x000000000003dd90                bg_gattdb_data_attribute_field_12
+                0x000000000003dd8c        0x4 ./gatt_db.o
+                0x000000000003dd8c                bg_gattdb_data_attribute_field_12
  .rodata.bg_gattdb_data_attribute_field_13
-                0x000000000003dd94       0x12 ./gatt_db.o
-                0x000000000003dd94                bg_gattdb_data_attribute_field_13
- *fill*         0x000000000003dda6        0x2 
+                0x000000000003dd90       0x12 ./gatt_db.o
+                0x000000000003dd90                bg_gattdb_data_attribute_field_13
+ *fill*         0x000000000003dda2        0x2 
  .rodata.bg_gattdb_data_attribute_field_14
-                0x000000000003dda8       0x15 ./gatt_db.o
-                0x000000000003dda8                bg_gattdb_data_attribute_field_14
- *fill*         0x000000000003ddbd        0x3 
+                0x000000000003dda4       0x15 ./gatt_db.o
+                0x000000000003dda4                bg_gattdb_data_attribute_field_14
+ *fill*         0x000000000003ddb9        0x3 
  .rodata.bg_gattdb_data_attribute_field_15
-                0x000000000003ddc0        0x8 ./gatt_db.o
-                0x000000000003ddc0                bg_gattdb_data_attribute_field_15
+                0x000000000003ddbc        0x8 ./gatt_db.o
+                0x000000000003ddbc                bg_gattdb_data_attribute_field_15
  .rodata.bg_gattdb_data_attribute_field_16
-                0x000000000003ddc8       0x15 ./gatt_db.o
-                0x000000000003ddc8                bg_gattdb_data_attribute_field_16
- *fill*         0x000000000003dddd        0x3 
+                0x000000000003ddc4       0x15 ./gatt_db.o
+                0x000000000003ddc4                bg_gattdb_data_attribute_field_16
+ *fill*         0x000000000003ddd9        0x3 
  .rodata.bg_gattdb_data_attribute_field_17
-                0x000000000003dde0        0x8 ./gatt_db.o
-                0x000000000003dde0                bg_gattdb_data_attribute_field_17
+                0x000000000003dddc        0x8 ./gatt_db.o
+                0x000000000003dddc                bg_gattdb_data_attribute_field_17
  .rodata.bg_gattdb_data_attribute_field_18
-                0x000000000003dde8       0x15 ./gatt_db.o
-                0x000000000003dde8                bg_gattdb_data_attribute_field_18
- *fill*         0x000000000003ddfd        0x3 
+                0x000000000003dde4       0x15 ./gatt_db.o
+                0x000000000003dde4                bg_gattdb_data_attribute_field_18
+ *fill*         0x000000000003ddf9        0x3 
  .rodata.bg_gattdb_data_attribute_field_19
-                0x000000000003de00        0x8 ./gatt_db.o
-                0x000000000003de00                bg_gattdb_data_attribute_field_19
+                0x000000000003ddfc        0x8 ./gatt_db.o
+                0x000000000003ddfc                bg_gattdb_data_attribute_field_19
  .rodata.bg_gattdb_data_attribute_field_2
-                0x000000000003de08        0x8 ./gatt_db.o
-                0x000000000003de08                bg_gattdb_data_attribute_field_2
+                0x000000000003de04        0x8 ./gatt_db.o
+                0x000000000003de04                bg_gattdb_data_attribute_field_2
  .rodata.bg_gattdb_data_attribute_field_20
-                0x000000000003de10       0x15 ./gatt_db.o
-                0x000000000003de10                bg_gattdb_data_attribute_field_20
- *fill*         0x000000000003de25        0x3 
+                0x000000000003de0c       0x15 ./gatt_db.o
+                0x000000000003de0c                bg_gattdb_data_attribute_field_20
+ *fill*         0x000000000003de21        0x3 
  .rodata.bg_gattdb_data_attribute_field_21
-                0x000000000003de28        0x8 ./gatt_db.o
-                0x000000000003de28                bg_gattdb_data_attribute_field_21
+                0x000000000003de24        0x8 ./gatt_db.o
+                0x000000000003de24                bg_gattdb_data_attribute_field_21
  .rodata.bg_gattdb_data_attribute_field_23
-                0x000000000003de30        0x4 ./gatt_db.o
-                0x000000000003de30                bg_gattdb_data_attribute_field_23
+                0x000000000003de2c        0x4 ./gatt_db.o
+                0x000000000003de2c                bg_gattdb_data_attribute_field_23
  .rodata.bg_gattdb_data_attribute_field_24
-                0x000000000003de34        0x7 ./gatt_db.o
-                0x000000000003de34                bg_gattdb_data_attribute_field_24
- *fill*         0x000000000003de3b        0x1 
+                0x000000000003de30        0x7 ./gatt_db.o
+                0x000000000003de30                bg_gattdb_data_attribute_field_24
+ *fill*         0x000000000003de37        0x1 
  .rodata.bg_gattdb_data_attribute_field_25
-                0x000000000003de3c        0x9 ./gatt_db.o
-                0x000000000003de3c                bg_gattdb_data_attribute_field_25
- *fill*         0x000000000003de45        0x3 
+                0x000000000003de38        0x9 ./gatt_db.o
+                0x000000000003de38                bg_gattdb_data_attribute_field_25
+ *fill*         0x000000000003de41        0x3 
  .rodata.bg_gattdb_data_attribute_field_26
-                0x000000000003de48        0x7 ./gatt_db.o
-                0x000000000003de48                bg_gattdb_data_attribute_field_26
- *fill*         0x000000000003de4f        0x1 
+                0x000000000003de44        0x7 ./gatt_db.o
+                0x000000000003de44                bg_gattdb_data_attribute_field_26
+ *fill*         0x000000000003de4b        0x1 
  .rodata.bg_gattdb_data_attribute_field_27
-                0x000000000003de50        0xc ./gatt_db.o
-                0x000000000003de50                bg_gattdb_data_attribute_field_27
+                0x000000000003de4c        0xc ./gatt_db.o
+                0x000000000003de4c                bg_gattdb_data_attribute_field_27
  .rodata.bg_gattdb_data_attribute_field_28
-                0x000000000003de5c        0x7 ./gatt_db.o
-                0x000000000003de5c                bg_gattdb_data_attribute_field_28
- *fill*         0x000000000003de63        0x1 
+                0x000000000003de58        0x7 ./gatt_db.o
+                0x000000000003de58                bg_gattdb_data_attribute_field_28
+ *fill*         0x000000000003de5f        0x1 
  .rodata.bg_gattdb_data_attribute_field_29
-                0x000000000003de64        0x8 ./gatt_db.o
-                0x000000000003de64                bg_gattdb_data_attribute_field_29
+                0x000000000003de60        0x8 ./gatt_db.o
+                0x000000000003de60                bg_gattdb_data_attribute_field_29
  .rodata.bg_gattdb_data_attribute_field_30
-                0x000000000003de6c       0x12 ./gatt_db.o
-                0x000000000003de6c                bg_gattdb_data_attribute_field_30
- *fill*         0x000000000003de7e        0x2 
+                0x000000000003de68       0x12 ./gatt_db.o
+                0x000000000003de68                bg_gattdb_data_attribute_field_30
+ *fill*         0x000000000003de7a        0x2 
  .rodata.bg_gattdb_data_attribute_field_31
-                0x000000000003de80       0x15 ./gatt_db.o
-                0x000000000003de80                bg_gattdb_data_attribute_field_31
- *fill*         0x000000000003de95        0x3 
+                0x000000000003de7c       0x15 ./gatt_db.o
+                0x000000000003de7c                bg_gattdb_data_attribute_field_31
+ *fill*         0x000000000003de91        0x3 
  .rodata.bg_gattdb_data_attribute_field_32
-                0x000000000003de98        0x8 ./gatt_db.o
-                0x000000000003de98                bg_gattdb_data_attribute_field_32
+                0x000000000003de94        0x8 ./gatt_db.o
+                0x000000000003de94                bg_gattdb_data_attribute_field_32
  .rodata.bg_gattdb_data_attribute_field_4
-                0x000000000003dea0        0x7 ./gatt_db.o
-                0x000000000003dea0                bg_gattdb_data_attribute_field_4
- *fill*         0x000000000003dea7        0x1 
+                0x000000000003de9c        0x7 ./gatt_db.o
+                0x000000000003de9c                bg_gattdb_data_attribute_field_4
+ *fill*         0x000000000003dea3        0x1 
  .rodata.bg_gattdb_data_attribute_field_5
-                0x000000000003dea8        0x8 ./gatt_db.o
-                0x000000000003dea8                bg_gattdb_data_attribute_field_5
+                0x000000000003dea4        0x8 ./gatt_db.o
+                0x000000000003dea4                bg_gattdb_data_attribute_field_5
  .rodata.bg_gattdb_data_attribute_field_6
-                0x000000000003deb0        0x7 ./gatt_db.o
-                0x000000000003deb0                bg_gattdb_data_attribute_field_6
- *fill*         0x000000000003deb7        0x1 
+                0x000000000003deac        0x7 ./gatt_db.o
+                0x000000000003deac                bg_gattdb_data_attribute_field_6
+ *fill*         0x000000000003deb3        0x1 
  .rodata.bg_gattdb_data_attribute_field_7
-                0x000000000003deb8        0x8 ./gatt_db.o
-                0x000000000003deb8                bg_gattdb_data_attribute_field_7
+                0x000000000003deb4        0x8 ./gatt_db.o
+                0x000000000003deb4                bg_gattdb_data_attribute_field_7
  .rodata.bg_gattdb_data_attribute_field_8
-                0x000000000003dec0        0x4 ./gatt_db.o
-                0x000000000003dec0                bg_gattdb_data_attribute_field_8
+                0x000000000003debc        0x4 ./gatt_db.o
+                0x000000000003debc                bg_gattdb_data_attribute_field_8
  .rodata.bg_gattdb_data_attribute_field_9
-                0x000000000003dec4        0x7 ./gatt_db.o
-                0x000000000003dec4                bg_gattdb_data_attribute_field_9
- *fill*         0x000000000003decb        0x1 
+                0x000000000003dec0        0x7 ./gatt_db.o
+                0x000000000003dec0                bg_gattdb_data_attribute_field_9
+ *fill*         0x000000000003dec7        0x1 
  .rodata.bg_gattdb_data_attributes_dynamic_mapping_map
-                0x000000000003decc       0x12 ./gatt_db.o
-                0x000000000003decc                bg_gattdb_data_attributes_dynamic_mapping_map
- *fill*         0x000000000003dede        0x2 
+                0x000000000003dec8       0x12 ./gatt_db.o
+                0x000000000003dec8                bg_gattdb_data_attributes_dynamic_mapping_map
+ *fill*         0x000000000003deda        0x2 
  .rodata.bg_gattdb_data_attributes_map
-                0x000000000003dee0      0x18c ./gatt_db.o
-                0x000000000003dee0                bg_gattdb_data_attributes_map
+                0x000000000003dedc      0x18c ./gatt_db.o
+                0x000000000003dedc                bg_gattdb_data_attributes_map
  .rodata.bg_gattdb_data_uuidtable_128_map
-                0x000000000003e06c       0x70 ./gatt_db.o
-                0x000000000003e06c                bg_gattdb_data_uuidtable_128_map
+                0x000000000003e068       0x70 ./gatt_db.o
+                0x000000000003e068                bg_gattdb_data_uuidtable_128_map
  .rodata.bg_gattdb_data_uuidtable_16_map
-                0x000000000003e0dc       0x1e ./gatt_db.o
-                0x000000000003e0dc                bg_gattdb_data_uuidtable_16_map
- *fill*         0x000000000003e0fa        0x2 
- .rodata        0x000000000003e0fc       0x2e ./init_mcu.o
- *fill*         0x000000000003e12a        0x2 
+                0x000000000003e0d8       0x1e ./gatt_db.o
+                0x000000000003e0d8                bg_gattdb_data_uuidtable_16_map
+ *fill*         0x000000000003e0f6        0x2 
+ .rodata        0x000000000003e0f8       0x2e ./init_mcu.o
+ *fill*         0x000000000003e126        0x2 
  .rodata.str1.4
-                0x000000000003e12c        0x4 ./main.o
- .rodata        0x000000000003e130       0x14 ./pti.o
- .rodata        0x000000000003e144       0x18 ./hardware/kit/common/drivers/mx25flash_spi.o
- .rodata        0x000000000003e15c       0x1c ./hardware/kit/common/drivers/retargetserial.o
+                0x000000000003e128        0x4 ./main.o
+ .rodata        0x000000000003e12c       0x14 ./pti.o
+ .rodata        0x000000000003e140       0x18 ./hardware/kit/common/drivers/mx25flash_spi.o
+ .rodata        0x000000000003e158       0x1c ./hardware/kit/common/drivers/retargetserial.o
  .rodata.nvm3_halFlashHandle
-                0x000000000003e178       0x1c ./platform/emdrv/nvm3/src/nvm3_hal_flash.o
-                0x000000000003e178                nvm3_halFlashHandle
+                0x000000000003e174       0x1c ./platform/emdrv/nvm3/src/nvm3_hal_flash.o
+                0x000000000003e174                nvm3_halFlashHandle
  .rodata.nvm3_maxFragmentCount
-                0x000000000003e194        0x1 ./platform/emdrv/nvm3/src/nvm3_lock.o
-                0x000000000003e194                nvm3_maxFragmentCount
- *fill*         0x000000000003e195        0x3 
+                0x000000000003e190        0x1 ./platform/emdrv/nvm3/src/nvm3_lock.o
+                0x000000000003e190                nvm3_maxFragmentCount
+ *fill*         0x000000000003e191        0x3 
  .rodata.nvm3_objHandleSize
-                0x000000000003e198        0x4 ./platform/emdrv/nvm3/src/nvm3_lock.o
-                0x000000000003e198                nvm3_objHandleSize
+                0x000000000003e194        0x4 ./platform/emdrv/nvm3/src/nvm3_lock.o
+                0x000000000003e194                nvm3_objHandleSize
  .rodata.CSWTCH.49
-                0x000000000003e19c       0x10 ./platform/emlib/src/em_cmu.o
+                0x000000000003e198       0x10 ./platform/emlib/src/em_cmu.o
  .rodata.CSWTCH.50
-                0x000000000003e1ac        0xc ./platform/emlib/src/em_cmu.o
+                0x000000000003e1a8        0xc ./platform/emlib/src/em_cmu.o
  .rodata.CSWTCH.52
-                0x000000000003e1b8       0x18 ./platform/emlib/src/em_cmu.o
+                0x000000000003e1b4       0x18 ./platform/emlib/src/em_cmu.o
  .rodata.CSWTCH.53
-                0x000000000003e1d0       0x14 ./platform/emlib/src/em_cmu.o
+                0x000000000003e1cc       0x14 ./platform/emlib/src/em_cmu.o
  .rodata.CSWTCH.54
-                0x000000000003e1e4       0x18 ./platform/emlib/src/em_cmu.o
- .rodata        0x000000000003e1fc        0xd ./platform/service/sleeptimer/src/sl_sleeptimer_hal_rtcc.o
- *fill*         0x000000000003e209        0x3 
- .rodata        0x000000000003e20c       0x11 ./spiflash/btl_driver_util.o
- *fill*         0x000000000003e21d        0x3 
+                0x000000000003e1e0       0x18 ./platform/emlib/src/em_cmu.o
+ .rodata        0x000000000003e1f8        0xd ./platform/service/sleeptimer/src/sl_sleeptimer_hal_rtcc.o
+ *fill*         0x000000000003e205        0x3 
+ .rodata        0x000000000003e208       0x11 ./spiflash/btl_driver_util.o
+ *fill*         0x000000000003e219        0x3 
  .rodata.CSWTCH.19
-                0x000000000003e220       0x58 ./spiflash/btl_storage_spiflash.o
+                0x000000000003e21c       0x58 ./spiflash/btl_storage_spiflash.o
  .rodata.CSWTCH.8
-                0x000000000003e278        0x4 ./spiflash/btl_storage_spiflash.o
+                0x000000000003e274        0x4 ./spiflash/btl_storage_spiflash.o
  .rodata.CSWTCH.9
-                0x000000000003e27c        0xb ./spiflash/btl_storage_spiflash.o
- *fill*         0x000000000003e287        0x1 
+                0x000000000003e278        0xb ./spiflash/btl_storage_spiflash.o
+ *fill*         0x000000000003e283        0x1 
  .rodata.CSWTCH.233
-                0x000000000003e288        0xc /Users/nams/SimplicityStudio/v4_workspace/BG22_bt_cdc_fs/platform/radio/rail_lib/autogen/librail_release/librail_efr32xg22_gcc_release.a(rail_rf_hal.o)
+                0x000000000003e284        0xc /Users/nams/SimplicityStudio/v4_workspace/BG22_bt_cdc_fs/platform/radio/rail_lib/autogen/librail_release/librail_efr32xg22_gcc_release.a(rail_rf_hal.o)
  .rodata.CSWTCH.13
-                0x000000000003e294        0x4 /Users/nams/SimplicityStudio/v4_workspace/BG22_bt_cdc_fs/platform/radio/rail_lib/autogen/librail_release/librail_efr32xg22_gcc_release.a(rail_ble_rf_hal.o)
+                0x000000000003e290        0x4 /Users/nams/SimplicityStudio/v4_workspace/BG22_bt_cdc_fs/platform/radio/rail_lib/autogen/librail_release/librail_efr32xg22_gcc_release.a(rail_ble_rf_hal.o)
  .rodata.ble_LR_DSA_125kb_timing
-                0x000000000003e298        0xc /Users/nams/SimplicityStudio/v4_workspace/BG22_bt_cdc_fs/platform/radio/rail_lib/autogen/librail_release/librail_efr32xg22_gcc_release.a(rail_ble_rf_hal.o)
-                0x000000000003e298                ble_LR_DSA_125kb_timing
+                0x000000000003e294        0xc /Users/nams/SimplicityStudio/v4_workspace/BG22_bt_cdc_fs/platform/radio/rail_lib/autogen/librail_release/librail_efr32xg22_gcc_release.a(rail_ble_rf_hal.o)
+                0x000000000003e294                ble_LR_DSA_125kb_timing
  .rodata.ble_LR_DSA_500kb_timing
-                0x000000000003e2a4        0xc /Users/nams/SimplicityStudio/v4_workspace/BG22_bt_cdc_fs/platform/radio/rail_lib/autogen/librail_release/librail_efr32xg22_gcc_release.a(rail_ble_rf_hal.o)
-                0x000000000003e2a4                ble_LR_DSA_500kb_timing
+                0x000000000003e2a0        0xc /Users/nams/SimplicityStudio/v4_workspace/BG22_bt_cdc_fs/platform/radio/rail_lib/autogen/librail_release/librail_efr32xg22_gcc_release.a(rail_ble_rf_hal.o)
+                0x000000000003e2a0                ble_LR_DSA_500kb_timing
  .rodata.ble_viterbi1M_timing
-                0x000000000003e2b0        0xc /Users/nams/SimplicityStudio/v4_workspace/BG22_bt_cdc_fs/platform/radio/rail_lib/autogen/librail_release/librail_efr32xg22_gcc_release.a(rail_ble_rf_hal.o)
-                0x000000000003e2b0                ble_viterbi1M_timing
+                0x000000000003e2ac        0xc /Users/nams/SimplicityStudio/v4_workspace/BG22_bt_cdc_fs/platform/radio/rail_lib/autogen/librail_release/librail_efr32xg22_gcc_release.a(rail_ble_rf_hal.o)
+                0x000000000003e2ac                ble_viterbi1M_timing
  .rodata.ble_viterbi2M_timing
-                0x000000000003e2bc        0xc /Users/nams/SimplicityStudio/v4_workspace/BG22_bt_cdc_fs/platform/radio/rail_lib/autogen/librail_release/librail_efr32xg22_gcc_release.a(rail_ble_rf_hal.o)
-                0x000000000003e2bc                ble_viterbi2M_timing
+                0x000000000003e2b8        0xc /Users/nams/SimplicityStudio/v4_workspace/BG22_bt_cdc_fs/platform/radio/rail_lib/autogen/librail_release/librail_efr32xg22_gcc_release.a(rail_ble_rf_hal.o)
+                0x000000000003e2b8                ble_viterbi2M_timing
  .rodata.lookup
-                0x000000000003e2c8        0x8 /Users/nams/SimplicityStudio/v4_workspace/BG22_bt_cdc_fs/platform/radio/rail_lib/autogen/librail_release/librail_efr32xg22_gcc_release.a(rail_ble_rf_hal.o)
+                0x000000000003e2c4        0x8 /Users/nams/SimplicityStudio/v4_workspace/BG22_bt_cdc_fs/platform/radio/rail_lib/autogen/librail_release/librail_efr32xg22_gcc_release.a(rail_ble_rf_hal.o)
  .rodata.regBases
-                0x000000000003e2d0        0x8 /Users/nams/SimplicityStudio/v4_workspace/BG22_bt_cdc_fs/platform/radio/rail_lib/autogen/librail_release/librail_efr32xg22_gcc_release.a(rfhal_radio.o)
+                0x000000000003e2cc        0x8 /Users/nams/SimplicityStudio/v4_workspace/BG22_bt_cdc_fs/platform/radio/rail_lib/autogen/librail_release/librail_efr32xg22_gcc_release.a(rfhal_radio.o)
  .rodata.DEC0_LOOKUP
-                0x000000000003e2d8        0x4 /Users/nams/SimplicityStudio/v4_workspace/BG22_bt_cdc_fs/platform/radio/rail_lib/autogen/librail_release/librail_efr32xg22_gcc_release.a(rfhal_synth.o)
- *fill*         0x000000000003e2dc       0x24 
+                0x000000000003e2d4        0x4 /Users/nams/SimplicityStudio/v4_workspace/BG22_bt_cdc_fs/platform/radio/rail_lib/autogen/librail_release/librail_efr32xg22_gcc_release.a(rfhal_synth.o)
+ *fill*         0x000000000003e2d8       0x28 
  .rodata.genericSeqProg
                 0x000000000003e300     0x2d9c /Users/nams/SimplicityStudio/v4_workspace/BG22_bt_cdc_fs/platform/radio/rail_lib/autogen/librail_release/librail_efr32xg22_gcc_release.a(generic_efr32xg22_seq.o)
                 0x000000000003e300                RAILINT_0cdb976df793f6799e20dfa42e2be4c6
