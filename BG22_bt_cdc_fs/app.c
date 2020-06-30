@@ -54,7 +54,7 @@
 /* battery */
 #include "em_device.h"
 #include "em_cmu.h"
-#include "em_adc.h"
+#include "em_iadc.h"
 
 /* Definitions of external signals */
 #define BUTTON_PRESSED (1 << 0)
@@ -100,6 +100,7 @@ uint32_t p_fifo_last_idx=0;
  **************************************************************************************************/
 static uint8 _conn_handle = 0xFF;
 static int _main_state;
+static uint8_t battBatteryLevel; /* Battery Level */
 
 typedef struct
 {
@@ -153,6 +154,9 @@ void printStats(tsCounters *psCounters)
 
 /* Print boot message */
 static void bootMessage(struct gecko_msg_system_boot_evt_t *bootevt);
+static void adcInit(void);
+void readBatteryLevel(void);
+
 int test_encrypt(uint8_t *answer);
 void test_encrypt_compare(void);
 void update_public_key(void);
@@ -164,6 +168,7 @@ static uint8_t boot_to_dfu = 0;
 static bool output_serial = false;
 static bool write_flash = false;
 static bool sending_ota = false;
+static bool sending_turbo = false;
 static int clicks = 0;
 static int flashes = 0;
 
@@ -712,7 +717,7 @@ void send_data()
 		do {
 			result = gecko_cmd_gatt_server_send_characteristic_notification(_conn_handle, gattdb_gatt_spp_data, xfer_len, data)->result;
 			_sCounters.num_writes++;
-			printLog("send result: %u\r\n", result);
+			// printLog("send result: %u\r\n", result);
 		} while(result == bg_err_out_of_memory);
 
 		if (result != 0) {
@@ -721,7 +726,7 @@ void send_data()
 			_sCounters.num_pack_sent++;
 			_sCounters.num_bytes_sent += (xfer_len-4);
 		}
-        addr += xfer_len;
+        addr += (xfer_len-4);
         len -= (xfer_len-4);
     	printLog("addr: %ld, len: %ld\r\n", addr, len);
     	if (packet_index%8 ==0) {
@@ -731,6 +736,66 @@ void send_data()
     printLog("Done xfer time:%ld\r\n",  ts_ms()-start);
 	printLog("number of bad memory reads in xfer: %d\r\n", bad);
 
+}
+
+void send_data_turbo(uint32_t start_idx, uint32_t number_of_packets)
+{
+	uint32_t len = encounter_count<<5;
+	uint8 data[256];
+	uint16 result;
+    int xfer_len = _min_packet_size & 0xFC;  // Make sure it is divisible by 4
+    uint32_t start_ts = ts_ms();
+	uint32_t addr=0;
+	int bad=0;
+    int max_data_len = xfer_len - 4;
+    int packet_index = 0;
+
+    // calculate max index
+    int max_index = len / (xfer_len - 4);
+	if (len % (xfer_len - 4) == 0)
+		max_index--;
+    if (start_idx > max_index) {
+    	// don't do anything???
+    	return;
+	} else {
+		// calculate number of bytes to read from memory
+		len = number_of_packets * (xfer_len - 4);
+		addr = start_idx * (xfer_len - 4);
+		// check if len is greater than what is left ot transfer
+		if ( (encounter_count<<5) - addr < len) {
+			len = (encounter_count<<5) - addr;
+		}
+		while (len > 0) {
+			if (len <= max_data_len)
+				xfer_len = len + 4;
+			memcpy(data, &packet_index, 4);
+			printLog("sent packet_idx %d\r\n", packet_index);
+			packet_index++;
+			int32_t retCode = storage_readRaw(addr, data + 4, xfer_len - 4);
+			if (retCode)
+				bad++;
+			do {
+				result =
+						gecko_cmd_gatt_server_send_characteristic_notification(
+								_conn_handle, gattdb_gatt_spp_data, xfer_len,
+								data)->result;
+				_sCounters.num_writes++;
+				// printLog("send result: %u\r\n", result);
+			} while (result == bg_err_out_of_memory);
+
+			if (result != 0) {
+				printLog("Unexpected error: %x\r\n", result);
+			} else {
+				_sCounters.num_pack_sent++;
+				_sCounters.num_bytes_sent += (xfer_len - 4);
+			}
+			addr += (xfer_len - 4);
+			len -= (xfer_len - 4);
+			printLog("addr: %ld, len: %ld\r\n", addr, len);
+		}
+		printLog("Done xfer time:%ld\r\n", ts_ms() - start_ts);
+		printLog("number of bad memory reads in xfer: %d\r\n", bad);
+	}
 }
 
 uint32_t em(uint32_t t) {
@@ -822,7 +887,7 @@ void parse_command(char c) {
 	case 'f':{
 		printLog("mode: send data ota\r\n");
 		// SLEEP_SleepBlockBegin(sleepEM2); // Disable sleeping
-		//send_data();  // over bluetooth
+		// send_data();  // over bluetooth
 		// SLEEP_SleepBlockEnd(sleepEM2); // Enable sleeping
         sending_ota = true;
 
@@ -836,12 +901,14 @@ void parse_command(char c) {
 	case 't':{
 		printLog("mode: send data turbo\r\n");
 		// SLEEP_SleepBlockBegin(sleepEM2); // Disable sleeping
+		// sending_turbo = true;
 		send_data();  // over bluetooth
 		// SLEEP_SleepBlockEnd(sleepEM2); // Enable sleeping
         break;
 	}
 	case 'T':{
 		printLog("mode: place holder for end send turbo\r\n");
+		// sending_turbo = false;
         break;
 	}
 	case 'u':{
@@ -1334,7 +1401,9 @@ void appMain(gecko_configuration_t *pconfig)
   initLog();
   init_GPIO();
   init_leds();
-
+  adcInit();
+  readBatteryLevel();
+  printLog("BatteryLevel %d\r\n", battBatteryLevel);
   /* Initialize stack */
   gecko_init(pconfig);
   int32_t flash_ret = storage_init();
@@ -1476,6 +1545,7 @@ void appMain(gecko_configuration_t *pconfig)
 			  uint32_t ts = ts_ms();
 			  if (mode==MODE_ENCOUNTER) {
 				  if (ts>next_minute) update_next_minute();
+				  readBatteryLevel();
 			  }
 
 			  switch(evt->data.evt_hardware_soft_timer.handle) {
@@ -1632,6 +1702,15 @@ void appMain(gecko_configuration_t *pconfig)
 						  // printLog("Got request for data, len %d, idx: %ld\r\n", evt->data.evt_gatt_server_attribute_value.value.len, *index);
 						  send_chunk(*index);
 					  } else { printLog("Recevied the wrong number of bytes: %d/4\r\n", len); }
+				  } else if (sending_turbo) {
+					  uint32_t *params;
+					  int len = evt->data.evt_gatt_server_attribute_value.value.len;
+					  if (len==8) {
+						  params = (uint32_t *) evt->data.evt_gatt_server_attribute_value.value.data;
+						  printLog("Got request for turbo data, len %d, idx: %lu len: %lu\r\n",
+								  evt->data.evt_gatt_server_attribute_value.value.len, params[0], params[1]);
+						  send_data_turbo(params[0], params[1]);
+					  } else { printLog("Recevied the wrong number of bytes: %d/8\r\n", len); }
 				  } else {
 					  char *msg;
 					  msg = (char *) evt->data.evt_gatt_server_attribute_value.value.data;
@@ -1661,6 +1740,16 @@ void appMain(gecko_configuration_t *pconfig)
 
 			  break;
 		  }
+
+	      case gecko_evt_gatt_server_user_read_request_id:
+		    printLog("user read request characteristic: %d\r\n",
+		    		(evt->data.evt_gatt_server_user_read_request.characteristic) );
+	        if(evt->data.evt_gatt_server_user_read_request.characteristic == gattdb_battery_level) {
+	          gecko_cmd_gatt_server_send_user_read_response(evt->data.evt_gatt_server_user_read_request.connection,
+	              evt->data.evt_gatt_server_user_read_request.characteristic, 0, 1, &battBatteryLevel);
+	        }
+	        break;
+
 		  /* Events related to OTA upgrading
 			 ----------------------------------------------------------------------------- */
 
@@ -1762,4 +1851,177 @@ void test_encrypt_compare(void)
     printLog("time: %d\n", res);
 
 
+}
+
+// from https://docs.silabs.com/resources/bluetooth/code-examples/applications/reporting-battery-voltage-over-ble/source/app.c
+#if defined(ADC_PRESENT)
+/* 5V reference voltage, no attenuation on AVDD, 12 bit ADC data */
+  #define ADC_SCALE_FACTOR   (5.0 / 4095.0)
+#elif defined(IADC_PRESENT)
+/* 1.21V reference voltage, AVDD attenuated by a factor of 4, 12 bit ADC data */
+  #define ADC_SCALE_FACTOR   (4.84 / 4095.0)
+#endif
+
+/**
+ * @brief Initialise ADC. Called after boot in this example.
+ */
+
+static void adcInit(void)
+{
+#if defined(ADC_PRESENT)
+  ADC_Init_TypeDef init = ADC_INIT_DEFAULT;
+  ADC_InitSingle_TypeDef initSingle = ADC_INITSINGLE_DEFAULT;
+
+  CMU_ClockEnable(cmuClock_ADC0, true);
+  CMU_ClockEnable(cmuClock_PRS, true);
+
+  /* Only configure the ADC if it is not already running */
+  if ( ADC0->CTRL == _ADC_CTRL_RESETVALUE ) {
+    init.timebase = ADC_TimebaseCalc(0);
+    init.prescale = ADC_PrescaleCalc(1000000, 0);
+    ADC_Init(ADC0, &init);
+  }
+
+  initSingle.acqTime = adcAcqTime16;
+  initSingle.reference = adcRef5VDIFF;
+  initSingle.posSel = adcPosSelAVDD;
+  initSingle.negSel = adcNegSelVSS;
+  initSingle.prsEnable = true;
+  initSingle.prsSel = adcPRSSELCh4;
+
+  ADC_InitSingle(ADC0, &initSingle);
+#elif defined(IADC_PRESENT)
+  IADC_Init_t init = IADC_INIT_DEFAULT;
+  IADC_AllConfigs_t allConfigs = IADC_ALLCONFIGS_DEFAULT;
+  IADC_InitSingle_t initSingle = IADC_INITSINGLE_DEFAULT;
+  IADC_SingleInput_t input = IADC_SINGLEINPUT_DEFAULT;
+
+  CMU_ClockEnable(cmuClock_IADC0, true);
+  CMU_ClockEnable(cmuClock_PRS, true);
+
+  /* Only configure the ADC if it is not already running */
+  if ( IADC0->CTRL == _IADC_CTRL_RESETVALUE ) {
+    IADC_init(IADC0, &init, &allConfigs);
+  }
+
+  input.posInput = iadcPosInputAvdd;
+
+  IADC_initSingle(IADC0, &initSingle, &input);
+  IADC_enableInt(IADC0, IADC_IEN_SINGLEDONE);
+#endif
+  return;
+}
+
+
+/***************************************************************************//**
+ * @brief
+ *    Initiates an A/D conversion and reads the sample when done
+ *
+ * @return
+ *    The output of the A/D conversion
+ ******************************************************************************/
+static uint16_t getAdcSample(void)
+{
+#if defined(ADC_PRESENT)
+  ADC_Start(ADC0, adcStartSingle);
+  while ( !(ADC_IntGet(ADC0) & ADC_IF_SINGLE) )
+    ;
+
+  return ADC_DataSingleGet(ADC0);
+#elif defined(IADC_PRESENT)
+  /* Clear single done interrupt */
+  IADC_clearInt(IADC0, IADC_IF_SINGLEDONE);
+
+  /* Start conversion and wait for result */
+  IADC_command(IADC0, IADC_CMD_SINGLESTART);
+  while ( !(IADC_getInt(IADC0) & IADC_IF_SINGLEDONE) ) ;
+
+  return IADC_readSingleData(IADC0);
+#endif
+}
+
+
+/***************************************************************************//**
+ * @brief
+ *    Measures the supply voltage by averaging multiple readings
+ *
+ * @param[in] avg
+ *    Number of measurements to average
+ *
+ * @return
+ *    The measured voltage
+ ******************************************************************************/
+float SUPPLY_measureVoltage(unsigned int avg)
+{
+  uint16_t adcData;
+  float supplyVoltage;
+  int i;
+
+  adcInit();
+
+  supplyVoltage = 0;
+
+  for ( i = 0; i < avg; i++ ) {
+    adcData = getAdcSample();
+    supplyVoltage += (float) adcData * ADC_SCALE_FACTOR;
+  }
+
+  supplyVoltage = supplyVoltage / (float) avg;
+
+  return supplyVoltage;
+}
+
+typedef struct {
+  float         voltage;
+  uint8_t       capacity;
+} VoltageCapacityPair;
+
+static VoltageCapacityPair battCR2032Model[] =
+{ { 3.0, 100 }, { 2.9, 80 }, { 2.8, 60 }, { 2.7, 40 }, { 2.6, 30 },
+  { 2.5, 20 }, { 2.4, 10 }, { 2.0, 0 } };
+
+static uint8_t battBatteryLevel; /* Battery Level */
+
+/***************************************************************************************************
+ * Static Function Declarations
+ **************************************************************************************************/
+// static uint8_t readBatteryLevel(void);
+
+static uint8_t calculateLevel(float voltage, VoltageCapacityPair *model, uint8_t modelEntryCount)
+{
+  uint8_t res = 0;
+
+  if (voltage >= model[0].voltage) {
+    /* Return with max capacity if voltage is greater than the max voltage in the model */
+    res = model[0].capacity;
+  } else if (voltage <= model[modelEntryCount - 1].voltage) {
+    /* Return with min capacity if voltage is smaller than the min voltage in the model */
+    res = model[modelEntryCount - 1].capacity;
+  } else {
+    uint8_t i;
+    /* Otherwise find the 2 points in the model where the voltage level fits in between,
+       and do linear interpolation to get the estimated capacity value */
+    for (i = 0; i < (modelEntryCount - 1); i++) {
+      if ((voltage < model[i].voltage) && (voltage >= model[i + 1].voltage)) {
+        res = (uint8_t)((voltage - model[i + 1].voltage)
+                        * (model[i].capacity - model[i + 1].capacity)
+                        / (model[i].voltage - model[i + 1].voltage));
+        res += model[i + 1].capacity;
+        break;
+      }
+    }
+  }
+
+  return res;
+}
+
+
+// static uint8_t readBatteryLevel(void)
+void readBatteryLevel(void)
+{
+  float voltage = SUPPLY_measureVoltage(1);
+  battBatteryLevel = calculateLevel(voltage, battCR2032Model, sizeof(battCR2032Model) / sizeof(VoltageCapacityPair));
+  // uint8_t level = calculateLevel(voltage, battCR2032Model, sizeof(battCR2032Model) / sizeof(VoltageCapacityPair));
+
+  //return level;
 }

@@ -26,7 +26,7 @@
     <informativeText>Custom service</informativeText>
     
     <!--data_in-->
-    <characteristic name="data_in" sourceId="custom.type" uuid="398d2a6c-b541-4160-b4b0-c59b4e27a1bb">
+    <characteristic id="data_in" name="data_in" sourceId="custom.type" uuid="398d2a6c-b541-4160-b4b0-c59b4e27a1bb">
       <informativeText>Custom characteristic</informativeText>
       <value length="4" type="hex" variable_length="false">0x00</value>
       <properties write_no_response="true" write_no_response_requirement="optional"/>
@@ -89,6 +89,30 @@
       <informativeText>Abstract: Silicon Labs OTA Control. </informativeText>
       <value length="1" type="user" variable_length="false"/>
       <properties write="true" write_requirement="optional"/>
+    </characteristic>
+  </service>
+  
+  <!--Battery Service-->
+  <service advertise="false" id="battery_service" name="Battery Service" requirement="mandatory" sourceId="org.bluetooth.service.battery_service" type="primary" uuid="180F">
+    <informativeText>Abstract: The Battery Service exposes the state of a battery within a device. Summary: The Battery Service exposes the Battery State and Battery Level of a single battery or set of batteries in a device. </informativeText>
+    
+    <!--Battery Level-->
+    <characteristic id="battery_level" name="Battery Level" sourceId="org.bluetooth.characteristic.battery_level" uuid="2A19">
+      <informativeText>Abstract: The current charge level of a battery. 100% represents fully charged while 0% represents fully discharged. </informativeText>
+      <value length="1" type="user" variable_length="false"/>
+      <properties indicate="false" indicate_requirement="excluded" notify="false" notify_requirement="optional" read="true" read_requirement="mandatory" reliable_write="false" reliable_write_requirement="excluded" write="false" write_no_response="false" write_no_response_requirement="excluded" write_requirement="excluded"/>
+      
+      <!--Characteristic Presentation Format-->
+      <descriptor id="characteristic_presentation_format" name="Characteristic Presentation Format" sourceId="org.bluetooth.descriptor.gatt.characteristic_presentation_format" uuid="2904">
+        <properties read="true" read_requirement="mandatory" write="false" write_requirement="excluded"/>
+        <value length="7" type="hex" variable_length="false"/>
+      </descriptor>
+      
+      <!--Client Characteristic Configuration-->
+      <descriptor id="client_characteristic_configuration" name="Client Characteristic Configuration" sourceId="org.bluetooth.descriptor.gatt.client_characteristic_configuration" uuid="2902">
+        <properties read="true" read_requirement="mandatory" write="true" write_requirement="mandatory"/>
+        <value length="2" type="hex" variable_length="false"/>
+      </descriptor>
     </characteristic>
   </service>
 </gatt>
