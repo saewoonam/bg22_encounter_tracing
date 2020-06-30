@@ -859,7 +859,7 @@ void start_writing_flash() {
 }
 
 const char *version_str = "Version: " __DATE__ " " __TIME__;
-const char *ota_version = "1.0";
+const char *ota_version = "1.2";
 void parse_command(char c) {
 	switch(c) {
 	case 'r':
