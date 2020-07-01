@@ -169,6 +169,7 @@ static bool output_serial = false;
 static bool write_flash = false;
 static bool sending_ota = false;
 static bool sending_turbo = false;
+static bool mark_set = false;
 static int clicks = 0;
 static int flashes = 0;
 
@@ -859,7 +860,7 @@ void start_writing_flash() {
 }
 
 const char *version_str = "Version: " __DATE__ " " __TIME__;
-const char *ota_version = "1.2";
+const char *ota_version = "1.3";
 void parse_command(char c) {
 	switch(c) {
 	case 'r':
@@ -954,9 +955,12 @@ void parse_command(char c) {
 
 		if (write_flash) {
 			value = 1;
+			if (mark_set) {
+				value = 3;
+			}
 		}
 		send_ota_uint8(value);
-		printLog("sent write_flash value: %d\r\n", write_flash);
+		printLog("sent write_flash value: %d\r\n", value);
 		break;
 	}
 	case 'w':{
@@ -967,6 +971,7 @@ void parse_command(char c) {
 	}
 	case 's':{
 		write_flash = false;
+		mark_set = false;
 		printLog("Stop writing to flash\r\n");
         break;
 	}
@@ -1053,10 +1058,12 @@ void parse_command(char c) {
 	}
 	case 'M': {
         gecko_external_signal(LOG_MARK);
+        mark_set = true;
         break;
 	}
 	case 'U': {
         gecko_external_signal(LOG_UNMARK);
+        mark_set = false;
         break;
 	}
     case 'h':
