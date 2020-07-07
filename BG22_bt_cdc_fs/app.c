@@ -2032,3 +2032,25 @@ void readBatteryLevel(void)
 
   //return level;
 }
+
+#include "em_prs.h"
+
+#define RX_OBS_PRS_CHANNEL 0
+#define TX_OBS_PRS_CHANNEL 1
+
+void enableDebugGpios(GPIO_Port_TypeDef rx_obs_port, uint8_t rx_obs_pin, GPIO_Port_TypeDef tx_obs_port, uint8_t tx_obs_pin)
+{
+  // Turn on the PRS and GPIO clocks to access their registers.
+  // Configure pins as output.
+  GPIO_PinModeSet(rx_obs_port, rx_obs_pin, gpioModePushPull, 0);
+  GPIO_PinModeSet(tx_obs_port, tx_obs_pin, gpioModePushPull, 0);
+
+  // Configure PRS Channel 0 to output RAC_RX.
+  PRS_SourceAsyncSignalSet(0,PRS_ASYNC_CH_CTRL_SOURCESEL_RAC,_PRS_ASYNC_CH_CTRL_SIGSEL_RACLRX) ;
+  PRS_PinOutput(RX_OBS_PRS_CHANNEL, prsTypeAsync,rx_obs_port, rx_obs_pin);
+
+  /* Configure PRS Channel 0 to output RAC_RX.*/
+  PRS_SourceAsyncSignalSet(1,PRS_ASYNC_CH_CTRL_SOURCESEL_RAC,_PRS_ASYNC_CH_CTRL_SIGSEL_RACLTX) ;
+  PRS_PinOutput(TX_OBS_PRS_CHANNEL, prsTypeAsync,tx_obs_port, tx_obs_pin);
+}
+// enableDebugGpios(gpioPortF,6,gpioPortF,7);
