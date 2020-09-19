@@ -56,11 +56,13 @@
 #include "em_cmu.h"
 #include "em_iadc.h"
 
+#define THREE_BUTTONS
 /* Definitions of external signals */
 #define BUTTON_PRESSED (1 << 0)
 #define BUTTON_RELEASED (1 << 1)
 #define LOG_MARK (1<<2)
 #define LOG_UNMARK (1<<3)
+#define LOG_RESET (1<<4)
 /*
  *
 #include "retargetserial.h"
@@ -542,13 +544,16 @@ void send32bytes(uint8_t *buffer) {
 	}
 }
 
-void determine_counts() {
+void determine_counts(uint32_t flash_size) {
 	uint32_t count=0;
 	bool empty=true;
+	// printf("flash_size<<5: %ld\r\n", (flash_size>>5));
 	do {
 		empty = verifyErased(count<<5, 32);
 		if (!empty) count++;
-	} while (!empty);
+		// printLog("count:%lu\r\n", count);
+	} while (!empty & (count<(flash_size>>5)));
+
 	encounter_count = count;
 	printLog("number of records: %ld\r\n", count);
 	gecko_cmd_gatt_server_write_attribute_value(gattdb_count, 0, 4, (const uint8*) &count);
@@ -604,13 +609,17 @@ void store_event(uint8_t *event) {
     CORE_EXIT_ATOMIC(); // Enable interrupts
 }
 
-void store_time() {
+void store_time(uint8_t *data, uint8_t len) {
     uint8_t time_evt[32];
 	memset(time_evt, 0, 32);
 	memcpy(time_evt+4, &epochtimesync, 4);
 	memcpy(time_evt+8, &offset_time, 4);
 	memcpy(time_evt+12, &offset_overflow, 4);
 	memset(time_evt+16, 0xFF, 16);
+	if (len>0) {
+		if (len>16) len=16;
+		memcpy(time_evt+16, data, len);
+	}
 	_time.gottime = true;
 	_time.epochtimesync = epochtimesync;
 	_time.next_minute = next_minute;
@@ -846,7 +855,7 @@ void set_name(uint8_t *name) {
 	printLog("name: %s\r\n", buffer);
 	*/
 }
-void start_writing_flash() {
+void start_writing_flash(uint8_t *data, uint8_t len) {
 	write_flash = true;
 	p_fifo_last_idx = c_fifo_last_idx;
 	printLog("Start writing to flash\r\n");
@@ -856,11 +865,11 @@ void start_writing_flash() {
 	if (mode==MODE_ENCOUNTER) {
 		store_event(blank);
 	}
-	store_time();
+	store_time(data, len);
 }
 
 const char *version_str = "Version: " __DATE__ " " __TIME__;
-const char *ota_version = "1.3";
+const char *ota_version = "1.4.2";
 void parse_command(char c) {
 	switch(c) {
 	case 'r':
@@ -965,7 +974,10 @@ void parse_command(char c) {
 	}
 	case 'w':{
 		if (!write_flash) {
-			start_writing_flash();
+			uint8_t *data = gecko_cmd_gatt_server_read_attribute_value(gattdb_gatt_spp_data,0 )->value.data;
+			uint8_t len = gecko_cmd_gatt_server_read_attribute_value(gattdb_gatt_spp_data,0 )->value.len;
+
+			start_writing_flash(data, len);
 		}
         break;
 	}
@@ -1097,6 +1109,7 @@ void process_scan(struct gecko_cmd_packet* evt) {
 		ptr[10] = rssi;
 		ptr[11] = channel;
 		memcpy(ptr+12, evt->data.evt_le_gap_extended_scan_response.data.data+11, 20);
+		// printLog("t: %lu rssi: %d channel %d\r\n", timestamp, rssi, channel);
 		/*
 		printLog("t: %lu rssi: %d channel %d adv_len: %d\r\n", timestamp, rssi, channel, adv_len);
 		printLog("received from:   %02x:%02x:%02x:%02x:%02x:%02x\r\n",
@@ -1312,13 +1325,63 @@ static void button_callback(const uint8_t pin)
   if (pin == BSP_BUTTON0_PIN) {
     /* when input is high, the button was released */
     if (GPIO_PinInGet(BSP_BUTTON0_PORT,BSP_BUTTON0_PIN)) {
-        gecko_external_signal(BUTTON_RELEASED);
+        // gecko_external_signal(BUTTON_RELEASED);
+        gecko_external_signal(LOG_RESET);
+
     }
     /* when input is low, the button was pressed*/
     else {
         gecko_external_signal(BUTTON_PRESSED);
     }
   }
+  if (pin == BSP_BUTTON1_PIN) {
+    /* when input is high, the button was released */
+    if (GPIO_PinInGet(BSP_BUTTON0_PORT,BSP_BUTTON0_PIN)) {
+        gecko_external_signal(LOG_MARK);
+    }
+    /* when input is low, the button was pressed*/
+    else {
+    	;
+    }
+  }
+  if (pin == BSP_BUTTON2_PIN) {
+    /* when input is high, the button was released */
+    if (GPIO_PinInGet(BSP_BUTTON0_PORT,BSP_BUTTON0_PIN)) {
+        gecko_external_signal(LOG_UNMARK);
+    }
+    /* when input is low, the button was pressed*/
+    else {
+    	;
+    }
+  }
+
+}
+
+typedef struct ButtonArray{
+  GPIO_Port_TypeDef   port;
+  unsigned int        pin;
+} ButtonArray_t;
+
+static const ButtonArray_t buttonArray[BSP_BUTTON_COUNT] = BSP_BUTTON_INIT;
+
+// void gpioCallback(uint8_t pin);
+
+void init_GPIO_buttons() {
+	GPIOINT_Init();
+	for (int i = 0; i < BSP_BUTTON_COUNT; i++) {
+		GPIO_PinModeSet(buttonArray[i].port, buttonArray[i].pin,
+				gpioModeInputPullFilter, 1);
+		GPIO_ExtIntConfig(buttonArray[i].port, buttonArray[i].pin,
+				buttonArray[i].pin, true, true, true);
+		GPIOINT_CallbackRegister(buttonArray[i].pin, button_callback);
+
+	}
+	/*
+	GPIOINT_CallbackRegister(buttonArray[0].pin, gpioCallback);
+	GPIOINT_CallbackRegister(buttonArray[1].pin, gpioCallback);
+	GPIO_IntConfig(buttonArray[0].port, buttonArray[0].pin, false, true, true);
+	GPIO_IntConfig(buttonArray[1].port, buttonArray[1].pin, false, true, true);
+	*/
 }
 
 void init_GPIO(void) {
@@ -1333,6 +1396,7 @@ void init_GPIO(void) {
 
 	/* Register callback for Push Button 0 */
 	GPIOINT_CallbackRegister(BSP_BUTTON0_PIN, button_callback);
+
 }
 /**
  * @brief setup_leds
@@ -1406,7 +1470,11 @@ void appMain(gecko_configuration_t *pconfig)
 
   /* Initialize debug prints. Note: debug prints are off by default. See DEBUG_LEVEL in app.h */
   initLog();
+#ifdef THREE_BUTTONS
+  init_GPIO_buttons();
+#else
   init_GPIO();
+#endif
   init_leds();
   adcInit();
   readBatteryLevel();
@@ -1416,7 +1484,7 @@ void appMain(gecko_configuration_t *pconfig)
   int32_t flash_ret = storage_init();
   uint32_t flash_size = storage_size();
   printLog("storage_init: %ld %ld\r\n", flash_ret, flash_size);
-  determine_counts();
+  determine_counts(flash_size);
   test_encrypt_compare();
   read_name_ps();
   while (1) {
@@ -1525,15 +1593,37 @@ void appMain(gecko_configuration_t *pconfig)
 	            c_fifo_last_idx++;
 			}
 
+			if (evt->data.evt_system_external_signal.extsignals & LOG_RESET) {
+				printLog("RESET MARK\r\n");
+			    Encounter_record *current_encounter;
+				uint32_t timestamp = ts_ms();
+		        if (timestamp>next_minute) update_next_minute();
+		        int sec_timestamp = (timestamp - (next_minute - 60000)) / 1000;
+		        uint32_t epoch_minute = ((timestamp-offset_time) / 1000 + epochtimesync)/60;
+
+                uint8_t mac_addr[6] = {2, 2, 2, 2, 2, 2};
+	            current_encounter = encounters + (c_fifo_last_idx & IDX_MASK);
+	            memset((uint8_t *)current_encounter, 0, 64);  // clear all values
+	            memcpy(current_encounter->mac, mac_addr, 6);
+	            current_encounter->first_time = sec_timestamp;
+	            current_encounter->last_time = sec_timestamp;
+	            current_encounter->minute = epoch_minute;
+	            current_encounter->flag = 0x07;
+	            memset(current_encounter->public_key, 3, 32);
+	            c_fifo_last_idx++;
+			}
+
+
 	        if (evt->data.evt_system_external_signal.extsignals & BUTTON_PRESSED) {
 	        	printLog("Button Pressed\r\n");
 	        }
 
 	        if (evt->data.evt_system_external_signal.extsignals & BUTTON_RELEASED) {
-	        	printLog("Button released\r\n");
-	        	clicks += 1;
-	        	gecko_cmd_hardware_set_soft_timer(32768>>2,HANDLE_CLICK,0);
-
+	        	printLog("Button released (reset)\r\n");
+	        	if (false) { // disable start recording with button press
+	        		clicks += 1;
+	        		gecko_cmd_hardware_set_soft_timer(32768>>2,HANDLE_CLICK,0);
+	        	}
 	        }
 
 	        break;
@@ -1574,7 +1664,7 @@ void appMain(gecko_configuration_t *pconfig)
 				  case 1:
 					  printLog("Single click\r\n");
 					  led_flash(1);
-					  start_writing_flash();
+					  // start_writing_flash();
 					  //write_flash = true;
 					  // gecko_cmd_hardware_set_soft_timer(0,HANDLE_CLICK,0);
 					  break;
@@ -1627,7 +1717,9 @@ void appMain(gecko_configuration_t *pconfig)
 		    	// actually 20ms and 40 ms
 		    	//gecko_cmd_le_connection_set_timing_parameters(_conn_handle, 16, 32, 0, 200, 0, 0xFFFF);
 		    	// 15ms, 30ms, 100ms
-		    	gecko_cmd_le_connection_set_timing_parameters(_conn_handle, 12, 24, 0, 10, 0, 0xFFFF);
+		    	// gecko_cmd_le_connection_set_timing_parameters(_conn_handle, 12, 24, 0, 10, 0, 0xFFFF);
+		    	// 15ms, 30ms, 100ms
+		    	gecko_cmd_le_connection_set_timing_parameters(_conn_handle, 6, 6, 0, 10, 0, 0xFFFF);
 
 			break;
 

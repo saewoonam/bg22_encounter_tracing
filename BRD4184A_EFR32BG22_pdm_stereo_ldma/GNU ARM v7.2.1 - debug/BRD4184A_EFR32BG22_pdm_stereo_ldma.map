@@ -1528,9 +1528,9 @@ Discarded input sections
  .text.CMU_ClockDivSet
                 0x0000000000000000       0x68 ./emlib/em_cmu.o
  .text.CMU_DPLLLock
-                0x0000000000000000      0x1e4 ./emlib/em_cmu.o
+                0x0000000000000000      0x224 ./emlib/em_cmu.o
  .text.CMU_HFRCODPLLBandSet
-                0x0000000000000000      0x114 ./emlib/em_cmu.o
+                0x0000000000000000      0x148 ./emlib/em_cmu.o
  .rodata.CSWTCH.31
                 0x0000000000000000       0x38 ./emlib/em_cmu.o
  .rodata.hfrcoCalTable
@@ -4792,7 +4792,7 @@ OUTPUT(BRD4184A_EFR32BG22_pdm_stereo_ldma.axf elf32-littlearm)
  .comment       0x000000000000007e       0x7f ./src/main_pdm_stereo_ldma.o
  .comment       0x000000000000007e       0x7f ./src/retargetserial.o
 
-.debug_line     0x0000000000000000     0xa04b
+.debug_line     0x0000000000000000     0xa099
  .debug_line    0x0000000000000000       0xe9 ./CMSIS/EFR32BG22/startup_efr32bg22.o
  .debug_line    0x00000000000000e9      0x9bf ./CMSIS/EFR32BG22/system_efr32bg22.o
  .debug_line    0x0000000000000aa8       0x8d ./DSP_FFT/arm_bitreversal2.o
@@ -4802,17 +4802,17 @@ OUTPUT(BRD4184A_EFR32BG22_pdm_stereo_ldma.axf elf32-littlearm)
  .debug_line    0x0000000000001f75      0x3fd ./DSP_FFT/arm_common_tables.o
  .debug_line    0x0000000000002372      0x414 ./DSP_FFT/arm_const_structs.o
  .debug_line    0x0000000000002786      0x44d ./DSP_FFT/arm_sqrt_q15.o
- .debug_line    0x0000000000002bd3     0x12f3 ./emlib/em_cmu.o
- .debug_line    0x0000000000003ec6      0xb73 ./emlib/em_core.o
- .debug_line    0x0000000000004a39      0xde1 ./emlib/em_emu.o
- .debug_line    0x000000000000581a      0xa3a ./emlib/em_gpio.o
- .debug_line    0x0000000000006254      0xade ./emlib/em_ldma.o
- .debug_line    0x0000000000006d32      0xda8 ./emlib/em_usart.o
- .debug_line    0x0000000000007ada      0xa6e ./retargetio.o
- .debug_line    0x0000000000008548      0xe62 ./src/main_pdm_stereo_ldma.o
- .debug_line    0x00000000000093aa      0xca1 ./src/retargetserial.o
+ .debug_line    0x0000000000002bd3     0x1341 ./emlib/em_cmu.o
+ .debug_line    0x0000000000003f14      0xb73 ./emlib/em_core.o
+ .debug_line    0x0000000000004a87      0xde1 ./emlib/em_emu.o
+ .debug_line    0x0000000000005868      0xa3a ./emlib/em_gpio.o
+ .debug_line    0x00000000000062a2      0xade ./emlib/em_ldma.o
+ .debug_line    0x0000000000006d80      0xda8 ./emlib/em_usart.o
+ .debug_line    0x0000000000007b28      0xa6e ./retargetio.o
+ .debug_line    0x0000000000008596      0xe62 ./src/main_pdm_stereo_ldma.o
+ .debug_line    0x00000000000093f8      0xca1 ./src/retargetserial.o
 
-.debug_info     0x0000000000000000    0x25024
+.debug_info     0x0000000000000000    0x250da
  .debug_info    0x0000000000000000       0x26 ./CMSIS/EFR32BG22/startup_efr32bg22.o
  .debug_info    0x0000000000000026     0x12ab ./CMSIS/EFR32BG22/system_efr32bg22.o
  .debug_info    0x00000000000012d1       0x26 ./DSP_FFT/arm_bitreversal2.o
@@ -4822,15 +4822,15 @@ OUTPUT(BRD4184A_EFR32BG22_pdm_stereo_ldma.axf elf32-littlearm)
  .debug_info    0x00000000000057ee     0x1448 ./DSP_FFT/arm_common_tables.o
  .debug_info    0x0000000000006c36     0x18c7 ./DSP_FFT/arm_const_structs.o
  .debug_info    0x00000000000084fd     0x124b ./DSP_FFT/arm_sqrt_q15.o
- .debug_info    0x0000000000009748     0x60cd ./emlib/em_cmu.o
- .debug_info    0x000000000000f815     0x1051 ./emlib/em_core.o
- .debug_info    0x0000000000010866     0x3379 ./emlib/em_emu.o
- .debug_info    0x0000000000013bdf     0x22a5 ./emlib/em_gpio.o
- .debug_info    0x0000000000015e84     0x1bcb ./emlib/em_ldma.o
- .debug_info    0x0000000000017a4f     0x3f40 ./emlib/em_usart.o
- .debug_info    0x000000000001b98f      0xeb0 ./retargetio.o
- .debug_info    0x000000000001c83f     0x5746 ./src/main_pdm_stereo_ldma.o
- .debug_info    0x0000000000021f85     0x309f ./src/retargetserial.o
+ .debug_info    0x0000000000009748     0x6183 ./emlib/em_cmu.o
+ .debug_info    0x000000000000f8cb     0x1051 ./emlib/em_core.o
+ .debug_info    0x000000000001091c     0x3379 ./emlib/em_emu.o
+ .debug_info    0x0000000000013c95     0x22a5 ./emlib/em_gpio.o
+ .debug_info    0x0000000000015f3a     0x1bcb ./emlib/em_ldma.o
+ .debug_info    0x0000000000017b05     0x3f40 ./emlib/em_usart.o
+ .debug_info    0x000000000001ba45      0xeb0 ./retargetio.o
+ .debug_info    0x000000000001c8f5     0x5746 ./src/main_pdm_stereo_ldma.o
+ .debug_info    0x000000000002203b     0x309f ./src/retargetserial.o
 
 .debug_abbrev   0x0000000000000000     0x3250
  .debug_abbrev  0x0000000000000000       0x14 ./CMSIS/EFR32BG22/startup_efr32bg22.o
@@ -4890,7 +4890,7 @@ OUTPUT(BRD4184A_EFR32BG22_pdm_stereo_ldma.axf elf32-littlearm)
  .debug_aranges
                 0x0000000000000628       0x50 ./src/retargetserial.o
 
-.debug_str      0x0000000000000000   0x18b945
+.debug_str      0x0000000000000000   0x18b999
  .debug_str     0x0000000000000000      0x111 ./CMSIS/EFR32BG22/startup_efr32bg22.o
  .debug_str     0x0000000000000111   0x177bfe ./CMSIS/EFR32BG22/system_efr32bg22.o
                                      0x1781cb (size before relaxing)
@@ -4908,56 +4908,56 @@ OUTPUT(BRD4184A_EFR32BG22_pdm_stereo_ldma.axf elf32-littlearm)
                                        0x8fc7 (size before relaxing)
  .debug_str     0x000000000017ca11      0x109 ./DSP_FFT/arm_sqrt_q15.o
                                        0x8a47 (size before relaxing)
- .debug_str     0x000000000017cb1a     0x4267 ./emlib/em_cmu.o
-                                     0x17dc07 (size before relaxing)
- .debug_str     0x0000000000180d81      0xd9a ./emlib/em_core.o
-                                     0x178741 (size before relaxing)
- .debug_str     0x0000000000181b1b      0xdb6 ./emlib/em_emu.o
-                                     0x17cd88 (size before relaxing)
- .debug_str     0x00000000001828d1      0x22f ./emlib/em_gpio.o
+ .debug_str     0x000000000017cb1a     0x42bb ./emlib/em_cmu.o
+                                     0x17dc5b (size before relaxing)
+ .debug_str     0x0000000000180dd5      0xd9a ./emlib/em_core.o
+                                     0x178740 (size before relaxing)
+ .debug_str     0x0000000000181b6f      0xdb6 ./emlib/em_emu.o
+                                     0x17cd87 (size before relaxing)
+ .debug_str     0x0000000000182925      0x22f ./emlib/em_gpio.o
                                      0x1791f7 (size before relaxing)
- .debug_str     0x0000000000182b00     0x33be ./emlib/em_ldma.o
-                                     0x17cffd (size before relaxing)
- .debug_str     0x0000000000185ebe     0x2ce8 ./emlib/em_usart.o
-                                     0x17c87f (size before relaxing)
- .debug_str     0x0000000000188ba6      0xdb2 ./retargetio.o
+ .debug_str     0x0000000000182b54     0x33be ./emlib/em_ldma.o
+                                     0x17cffc (size before relaxing)
+ .debug_str     0x0000000000185f12     0x2ce8 ./emlib/em_usart.o
+                                     0x17c87e (size before relaxing)
+ .debug_str     0x0000000000188bfa      0xdb2 ./retargetio.o
                                      0x17b37e (size before relaxing)
- .debug_str     0x0000000000189958     0x1e63 ./src/main_pdm_stereo_ldma.o
-                                     0x184f90 (size before relaxing)
- .debug_str     0x000000000018b7bb      0x18a ./src/retargetserial.o
-                                     0x17fa93 (size before relaxing)
+ .debug_str     0x00000000001899ac     0x1e63 ./src/main_pdm_stereo_ldma.o
+                                     0x184f8f (size before relaxing)
+ .debug_str     0x000000000018b80f      0x18a ./src/retargetserial.o
+                                     0x17fa92 (size before relaxing)
 
-.debug_loc      0x0000000000000000     0x88f5
+.debug_loc      0x0000000000000000     0x8ad8
  .debug_loc     0x0000000000000000       0x94 ./CMSIS/EFR32BG22/system_efr32bg22.o
  .debug_loc     0x0000000000000094      0xbd7 ./DSP_FFT/arm_cfft_q15.o
  .debug_loc     0x0000000000000c6b     0x1f25 ./DSP_FFT/arm_cfft_radix4_q15.o
  .debug_loc     0x0000000000002b90      0x2a6 ./DSP_FFT/arm_cmplx_mag_q15.o
  .debug_loc     0x0000000000002e36      0x82a ./DSP_FFT/arm_sqrt_q15.o
- .debug_loc     0x0000000000003660     0x2665 ./emlib/em_cmu.o
- .debug_loc     0x0000000000005cc5      0x6b2 ./emlib/em_core.o
- .debug_loc     0x0000000000006377      0x71e ./emlib/em_emu.o
- .debug_loc     0x0000000000006a95      0x690 ./emlib/em_gpio.o
- .debug_loc     0x0000000000007125      0x57c ./emlib/em_ldma.o
- .debug_loc     0x00000000000076a1      0x9b2 ./emlib/em_usart.o
- .debug_loc     0x0000000000008053      0x253 ./retargetio.o
- .debug_loc     0x00000000000082a6      0x442 ./src/main_pdm_stereo_ldma.o
- .debug_loc     0x00000000000086e8      0x20d ./src/retargetserial.o
+ .debug_loc     0x0000000000003660     0x2848 ./emlib/em_cmu.o
+ .debug_loc     0x0000000000005ea8      0x6b2 ./emlib/em_core.o
+ .debug_loc     0x000000000000655a      0x71e ./emlib/em_emu.o
+ .debug_loc     0x0000000000006c78      0x690 ./emlib/em_gpio.o
+ .debug_loc     0x0000000000007308      0x57c ./emlib/em_ldma.o
+ .debug_loc     0x0000000000007884      0x9b2 ./emlib/em_usart.o
+ .debug_loc     0x0000000000008236      0x253 ./retargetio.o
+ .debug_loc     0x0000000000008489      0x442 ./src/main_pdm_stereo_ldma.o
+ .debug_loc     0x00000000000088cb      0x20d ./src/retargetserial.o
 
-.debug_ranges   0x0000000000000000      0xca0
+.debug_ranges   0x0000000000000000      0xcd0
  .debug_ranges  0x0000000000000000       0x90 ./CMSIS/EFR32BG22/system_efr32bg22.o
  .debug_ranges  0x0000000000000090       0x50 ./DSP_FFT/arm_cfft_q15.o
  .debug_ranges  0x00000000000000e0       0x80 ./DSP_FFT/arm_cfft_radix4_q15.o
  .debug_ranges  0x0000000000000160       0x10 ./DSP_FFT/arm_cmplx_mag_q15.o
  .debug_ranges  0x0000000000000170       0x10 ./DSP_FFT/arm_sqrt_q15.o
- .debug_ranges  0x0000000000000180      0x250 ./emlib/em_cmu.o
- .debug_ranges  0x00000000000003d0       0xf0 ./emlib/em_core.o
- .debug_ranges  0x00000000000004c0      0x208 ./emlib/em_emu.o
- .debug_ranges  0x00000000000006c8      0x1a0 ./emlib/em_gpio.o
- .debug_ranges  0x0000000000000868       0xc0 ./emlib/em_ldma.o
- .debug_ranges  0x0000000000000928      0x1e8 ./emlib/em_usart.o
- .debug_ranges  0x0000000000000b10       0x58 ./retargetio.o
- .debug_ranges  0x0000000000000b68       0x90 ./src/main_pdm_stereo_ldma.o
- .debug_ranges  0x0000000000000bf8       0xa8 ./src/retargetserial.o
+ .debug_ranges  0x0000000000000180      0x280 ./emlib/em_cmu.o
+ .debug_ranges  0x0000000000000400       0xf0 ./emlib/em_core.o
+ .debug_ranges  0x00000000000004f0      0x208 ./emlib/em_emu.o
+ .debug_ranges  0x00000000000006f8      0x1a0 ./emlib/em_gpio.o
+ .debug_ranges  0x0000000000000898       0xc0 ./emlib/em_ldma.o
+ .debug_ranges  0x0000000000000958      0x1e8 ./emlib/em_usart.o
+ .debug_ranges  0x0000000000000b40       0x58 ./retargetio.o
+ .debug_ranges  0x0000000000000b98       0x90 ./src/main_pdm_stereo_ldma.o
+ .debug_ranges  0x0000000000000c28       0xa8 ./src/retargetserial.o
 
 .debug_macro    0x0000000000000000    0x3b3fa
  .debug_macro   0x0000000000000000      0x2d8 ./CMSIS/EFR32BG22/system_efr32bg22.o
@@ -5086,38 +5086,38 @@ OUTPUT(BRD4184A_EFR32BG22_pdm_stereo_ldma.axf elf32-littlearm)
  .debug_macro   0x000000000003af45       0x7a ./src/main_pdm_stereo_ldma.o
  .debug_macro   0x000000000003afbf      0x43b ./src/retargetserial.o
 
-.debug_frame    0x0000000000000000     0x1630
+.debug_frame    0x0000000000000000     0x1634
  .debug_frame   0x0000000000000000       0xf0 ./CMSIS/EFR32BG22/system_efr32bg22.o
  .debug_frame   0x00000000000000f0       0xb8 ./DSP_FFT/arm_cfft_q15.o
  .debug_frame   0x00000000000001a8       0x94 ./DSP_FFT/arm_cfft_radix4_q15.o
  .debug_frame   0x000000000000023c       0x3c ./DSP_FFT/arm_cmplx_mag_q15.o
  .debug_frame   0x0000000000000278       0x3c ./DSP_FFT/arm_sqrt_q15.o
- .debug_frame   0x00000000000002b4      0x38c ./emlib/em_cmu.o
- .debug_frame   0x0000000000000640      0x224 ./emlib/em_core.o
- .debug_frame   0x0000000000000864      0x25c ./emlib/em_emu.o
- .debug_frame   0x0000000000000ac0       0x94 ./emlib/em_gpio.o
- .debug_frame   0x0000000000000b54       0xe8 ./emlib/em_ldma.o
- .debug_frame   0x0000000000000c3c      0x1e0 ./emlib/em_usart.o
- .debug_frame   0x0000000000000e1c       0xc8 ./retargetio.o
- .debug_frame   0x0000000000000ee4       0xfc ./src/main_pdm_stereo_ldma.o
- .debug_frame   0x0000000000000fe0       0xc4 ./src/retargetserial.o
- .debug_frame   0x00000000000010a4       0x28 /Applications/Simplicity Studio.app/Contents/Eclipse/developer/toolchains/gnu_arm/7.2_2017q4/bin/../lib/gcc/arm-none-eabi/7.2.1/../../../../arm-none-eabi/lib/thumb/v8-m.main/fpv5-sp/softfp/libc_nano.a(lib_a-exit.o)
- .debug_frame   0x00000000000010cc       0x2c /Applications/Simplicity Studio.app/Contents/Eclipse/developer/toolchains/gnu_arm/7.2_2017q4/bin/../lib/gcc/arm-none-eabi/7.2.1/../../../../arm-none-eabi/lib/thumb/v8-m.main/fpv5-sp/softfp/libc_nano.a(lib_a-init.o)
- .debug_frame   0x00000000000010f8       0x20 /Applications/Simplicity Studio.app/Contents/Eclipse/developer/toolchains/gnu_arm/7.2_2017q4/bin/../lib/gcc/arm-none-eabi/7.2.1/../../../../arm-none-eabi/lib/thumb/v8-m.main/fpv5-sp/softfp/libc_nano.a(lib_a-memset.o)
- .debug_frame   0x0000000000001118       0x38 /Applications/Simplicity Studio.app/Contents/Eclipse/developer/toolchains/gnu_arm/7.2_2017q4/bin/../lib/gcc/arm-none-eabi/7.2.1/../../../../arm-none-eabi/lib/thumb/v8-m.main/fpv5-sp/softfp/libc_nano.a(lib_a-setvbuf.o)
- .debug_frame   0x0000000000001150       0x68 /Applications/Simplicity Studio.app/Contents/Eclipse/developer/toolchains/gnu_arm/7.2_2017q4/bin/../lib/gcc/arm-none-eabi/7.2.1/../../../../arm-none-eabi/lib/thumb/v8-m.main/fpv5-sp/softfp/libc_nano.a(lib_a-fflush.o)
- .debug_frame   0x00000000000011b8      0x11c /Applications/Simplicity Studio.app/Contents/Eclipse/developer/toolchains/gnu_arm/7.2_2017q4/bin/../lib/gcc/arm-none-eabi/7.2.1/../../../../arm-none-eabi/lib/thumb/v8-m.main/fpv5-sp/softfp/libc_nano.a(lib_a-findfp.o)
- .debug_frame   0x00000000000012d4       0x54 /Applications/Simplicity Studio.app/Contents/Eclipse/developer/toolchains/gnu_arm/7.2_2017q4/bin/../lib/gcc/arm-none-eabi/7.2.1/../../../../arm-none-eabi/lib/thumb/v8-m.main/fpv5-sp/softfp/libc_nano.a(lib_a-fwalk.o)
- .debug_frame   0x0000000000001328       0x58 /Applications/Simplicity Studio.app/Contents/Eclipse/developer/toolchains/gnu_arm/7.2_2017q4/bin/../lib/gcc/arm-none-eabi/7.2.1/../../../../arm-none-eabi/lib/thumb/v8-m.main/fpv5-sp/softfp/libc_nano.a(lib_a-makebuf.o)
- .debug_frame   0x0000000000001380       0x30 /Applications/Simplicity Studio.app/Contents/Eclipse/developer/toolchains/gnu_arm/7.2_2017q4/bin/../lib/gcc/arm-none-eabi/7.2.1/../../../../arm-none-eabi/lib/thumb/v8-m.main/fpv5-sp/softfp/libc_nano.a(lib_a-malloc.o)
- .debug_frame   0x00000000000013b0       0x38 /Applications/Simplicity Studio.app/Contents/Eclipse/developer/toolchains/gnu_arm/7.2_2017q4/bin/../lib/gcc/arm-none-eabi/7.2.1/../../../../arm-none-eabi/lib/thumb/v8-m.main/fpv5-sp/softfp/libc_nano.a(lib_a-nano-freer.o)
- .debug_frame   0x00000000000013e8       0x2c /Applications/Simplicity Studio.app/Contents/Eclipse/developer/toolchains/gnu_arm/7.2_2017q4/bin/../lib/gcc/arm-none-eabi/7.2.1/../../../../arm-none-eabi/lib/thumb/v8-m.main/fpv5-sp/softfp/libc_nano.a(lib_a-nano-mallocr.o)
- .debug_frame   0x0000000000001414       0x2c /Applications/Simplicity Studio.app/Contents/Eclipse/developer/toolchains/gnu_arm/7.2_2017q4/bin/../lib/gcc/arm-none-eabi/7.2.1/../../../../arm-none-eabi/lib/thumb/v8-m.main/fpv5-sp/softfp/libc_nano.a(lib_a-sbrkr.o)
- .debug_frame   0x0000000000001440       0x88 /Applications/Simplicity Studio.app/Contents/Eclipse/developer/toolchains/gnu_arm/7.2_2017q4/bin/../lib/gcc/arm-none-eabi/7.2.1/../../../../arm-none-eabi/lib/thumb/v8-m.main/fpv5-sp/softfp/libc_nano.a(lib_a-stdio.o)
- .debug_frame   0x00000000000014c8       0x2c /Applications/Simplicity Studio.app/Contents/Eclipse/developer/toolchains/gnu_arm/7.2_2017q4/bin/../lib/gcc/arm-none-eabi/7.2.1/../../../../arm-none-eabi/lib/thumb/v8-m.main/fpv5-sp/softfp/libc_nano.a(lib_a-writer.o)
- .debug_frame   0x00000000000014f4       0x2c /Applications/Simplicity Studio.app/Contents/Eclipse/developer/toolchains/gnu_arm/7.2_2017q4/bin/../lib/gcc/arm-none-eabi/7.2.1/../../../../arm-none-eabi/lib/thumb/v8-m.main/fpv5-sp/softfp/libc_nano.a(lib_a-closer.o)
- .debug_frame   0x0000000000001520       0x2c /Applications/Simplicity Studio.app/Contents/Eclipse/developer/toolchains/gnu_arm/7.2_2017q4/bin/../lib/gcc/arm-none-eabi/7.2.1/../../../../arm-none-eabi/lib/thumb/v8-m.main/fpv5-sp/softfp/libc_nano.a(lib_a-fstatr.o)
- .debug_frame   0x000000000000154c       0x2c /Applications/Simplicity Studio.app/Contents/Eclipse/developer/toolchains/gnu_arm/7.2_2017q4/bin/../lib/gcc/arm-none-eabi/7.2.1/../../../../arm-none-eabi/lib/thumb/v8-m.main/fpv5-sp/softfp/libc_nano.a(lib_a-lseekr.o)
- .debug_frame   0x0000000000001578       0x30 /Applications/Simplicity Studio.app/Contents/Eclipse/developer/toolchains/gnu_arm/7.2_2017q4/bin/../lib/gcc/arm-none-eabi/7.2.1/../../../../arm-none-eabi/lib/thumb/v8-m.main/fpv5-sp/softfp/libc_nano.a(lib_a-mlock.o)
- .debug_frame   0x00000000000015a8       0x2c /Applications/Simplicity Studio.app/Contents/Eclipse/developer/toolchains/gnu_arm/7.2_2017q4/bin/../lib/gcc/arm-none-eabi/7.2.1/../../../../arm-none-eabi/lib/thumb/v8-m.main/fpv5-sp/softfp/libc_nano.a(lib_a-readr.o)
- .debug_frame   0x00000000000015d4       0x5c /Applications/Simplicity Studio.app/Contents/Eclipse/developer/toolchains/gnu_arm/7.2_2017q4/bin/../lib/gcc/arm-none-eabi/7.2.1/../../../../arm-none-eabi/lib/thumb/v8-m.main/fpv5-sp/softfp/libc_nano.a(lib_a-reent.o)
+ .debug_frame   0x00000000000002b4      0x390 ./emlib/em_cmu.o
+ .debug_frame   0x0000000000000644      0x224 ./emlib/em_core.o
+ .debug_frame   0x0000000000000868      0x25c ./emlib/em_emu.o
+ .debug_frame   0x0000000000000ac4       0x94 ./emlib/em_gpio.o
+ .debug_frame   0x0000000000000b58       0xe8 ./emlib/em_ldma.o
+ .debug_frame   0x0000000000000c40      0x1e0 ./emlib/em_usart.o
+ .debug_frame   0x0000000000000e20       0xc8 ./retargetio.o
+ .debug_frame   0x0000000000000ee8       0xfc ./src/main_pdm_stereo_ldma.o
+ .debug_frame   0x0000000000000fe4       0xc4 ./src/retargetserial.o
+ .debug_frame   0x00000000000010a8       0x28 /Applications/Simplicity Studio.app/Contents/Eclipse/developer/toolchains/gnu_arm/7.2_2017q4/bin/../lib/gcc/arm-none-eabi/7.2.1/../../../../arm-none-eabi/lib/thumb/v8-m.main/fpv5-sp/softfp/libc_nano.a(lib_a-exit.o)
+ .debug_frame   0x00000000000010d0       0x2c /Applications/Simplicity Studio.app/Contents/Eclipse/developer/toolchains/gnu_arm/7.2_2017q4/bin/../lib/gcc/arm-none-eabi/7.2.1/../../../../arm-none-eabi/lib/thumb/v8-m.main/fpv5-sp/softfp/libc_nano.a(lib_a-init.o)
+ .debug_frame   0x00000000000010fc       0x20 /Applications/Simplicity Studio.app/Contents/Eclipse/developer/toolchains/gnu_arm/7.2_2017q4/bin/../lib/gcc/arm-none-eabi/7.2.1/../../../../arm-none-eabi/lib/thumb/v8-m.main/fpv5-sp/softfp/libc_nano.a(lib_a-memset.o)
+ .debug_frame   0x000000000000111c       0x38 /Applications/Simplicity Studio.app/Contents/Eclipse/developer/toolchains/gnu_arm/7.2_2017q4/bin/../lib/gcc/arm-none-eabi/7.2.1/../../../../arm-none-eabi/lib/thumb/v8-m.main/fpv5-sp/softfp/libc_nano.a(lib_a-setvbuf.o)
+ .debug_frame   0x0000000000001154       0x68 /Applications/Simplicity Studio.app/Contents/Eclipse/developer/toolchains/gnu_arm/7.2_2017q4/bin/../lib/gcc/arm-none-eabi/7.2.1/../../../../arm-none-eabi/lib/thumb/v8-m.main/fpv5-sp/softfp/libc_nano.a(lib_a-fflush.o)
+ .debug_frame   0x00000000000011bc      0x11c /Applications/Simplicity Studio.app/Contents/Eclipse/developer/toolchains/gnu_arm/7.2_2017q4/bin/../lib/gcc/arm-none-eabi/7.2.1/../../../../arm-none-eabi/lib/thumb/v8-m.main/fpv5-sp/softfp/libc_nano.a(lib_a-findfp.o)
+ .debug_frame   0x00000000000012d8       0x54 /Applications/Simplicity Studio.app/Contents/Eclipse/developer/toolchains/gnu_arm/7.2_2017q4/bin/../lib/gcc/arm-none-eabi/7.2.1/../../../../arm-none-eabi/lib/thumb/v8-m.main/fpv5-sp/softfp/libc_nano.a(lib_a-fwalk.o)
+ .debug_frame   0x000000000000132c       0x58 /Applications/Simplicity Studio.app/Contents/Eclipse/developer/toolchains/gnu_arm/7.2_2017q4/bin/../lib/gcc/arm-none-eabi/7.2.1/../../../../arm-none-eabi/lib/thumb/v8-m.main/fpv5-sp/softfp/libc_nano.a(lib_a-makebuf.o)
+ .debug_frame   0x0000000000001384       0x30 /Applications/Simplicity Studio.app/Contents/Eclipse/developer/toolchains/gnu_arm/7.2_2017q4/bin/../lib/gcc/arm-none-eabi/7.2.1/../../../../arm-none-eabi/lib/thumb/v8-m.main/fpv5-sp/softfp/libc_nano.a(lib_a-malloc.o)
+ .debug_frame   0x00000000000013b4       0x38 /Applications/Simplicity Studio.app/Contents/Eclipse/developer/toolchains/gnu_arm/7.2_2017q4/bin/../lib/gcc/arm-none-eabi/7.2.1/../../../../arm-none-eabi/lib/thumb/v8-m.main/fpv5-sp/softfp/libc_nano.a(lib_a-nano-freer.o)
+ .debug_frame   0x00000000000013ec       0x2c /Applications/Simplicity Studio.app/Contents/Eclipse/developer/toolchains/gnu_arm/7.2_2017q4/bin/../lib/gcc/arm-none-eabi/7.2.1/../../../../arm-none-eabi/lib/thumb/v8-m.main/fpv5-sp/softfp/libc_nano.a(lib_a-nano-mallocr.o)
+ .debug_frame   0x0000000000001418       0x2c /Applications/Simplicity Studio.app/Contents/Eclipse/developer/toolchains/gnu_arm/7.2_2017q4/bin/../lib/gcc/arm-none-eabi/7.2.1/../../../../arm-none-eabi/lib/thumb/v8-m.main/fpv5-sp/softfp/libc_nano.a(lib_a-sbrkr.o)
+ .debug_frame   0x0000000000001444       0x88 /Applications/Simplicity Studio.app/Contents/Eclipse/developer/toolchains/gnu_arm/7.2_2017q4/bin/../lib/gcc/arm-none-eabi/7.2.1/../../../../arm-none-eabi/lib/thumb/v8-m.main/fpv5-sp/softfp/libc_nano.a(lib_a-stdio.o)
+ .debug_frame   0x00000000000014cc       0x2c /Applications/Simplicity Studio.app/Contents/Eclipse/developer/toolchains/gnu_arm/7.2_2017q4/bin/../lib/gcc/arm-none-eabi/7.2.1/../../../../arm-none-eabi/lib/thumb/v8-m.main/fpv5-sp/softfp/libc_nano.a(lib_a-writer.o)
+ .debug_frame   0x00000000000014f8       0x2c /Applications/Simplicity Studio.app/Contents/Eclipse/developer/toolchains/gnu_arm/7.2_2017q4/bin/../lib/gcc/arm-none-eabi/7.2.1/../../../../arm-none-eabi/lib/thumb/v8-m.main/fpv5-sp/softfp/libc_nano.a(lib_a-closer.o)
+ .debug_frame   0x0000000000001524       0x2c /Applications/Simplicity Studio.app/Contents/Eclipse/developer/toolchains/gnu_arm/7.2_2017q4/bin/../lib/gcc/arm-none-eabi/7.2.1/../../../../arm-none-eabi/lib/thumb/v8-m.main/fpv5-sp/softfp/libc_nano.a(lib_a-fstatr.o)
+ .debug_frame   0x0000000000001550       0x2c /Applications/Simplicity Studio.app/Contents/Eclipse/developer/toolchains/gnu_arm/7.2_2017q4/bin/../lib/gcc/arm-none-eabi/7.2.1/../../../../arm-none-eabi/lib/thumb/v8-m.main/fpv5-sp/softfp/libc_nano.a(lib_a-lseekr.o)
+ .debug_frame   0x000000000000157c       0x30 /Applications/Simplicity Studio.app/Contents/Eclipse/developer/toolchains/gnu_arm/7.2_2017q4/bin/../lib/gcc/arm-none-eabi/7.2.1/../../../../arm-none-eabi/lib/thumb/v8-m.main/fpv5-sp/softfp/libc_nano.a(lib_a-mlock.o)
+ .debug_frame   0x00000000000015ac       0x2c /Applications/Simplicity Studio.app/Contents/Eclipse/developer/toolchains/gnu_arm/7.2_2017q4/bin/../lib/gcc/arm-none-eabi/7.2.1/../../../../arm-none-eabi/lib/thumb/v8-m.main/fpv5-sp/softfp/libc_nano.a(lib_a-readr.o)
+ .debug_frame   0x00000000000015d8       0x5c /Applications/Simplicity Studio.app/Contents/Eclipse/developer/toolchains/gnu_arm/7.2_2017q4/bin/../lib/gcc/arm-none-eabi/7.2.1/../../../../arm-none-eabi/lib/thumb/v8-m.main/fpv5-sp/softfp/libc_nano.a(lib_a-reent.o)

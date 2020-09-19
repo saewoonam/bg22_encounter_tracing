@@ -21,15 +21,26 @@
 // $[BUTTON]
 #define BSP_BUTTON_PRESENT                   (1)
 
-#define BSP_BUTTON0_PIN                      (1U)
+// #define BSP_BUTTON0_PIN                      (1U)
+//#define BSP_BUTTON0_PORT                     (gpioPortB)
+//RESET
+#define BSP_BUTTON0_PIN                      (0U)
 #define BSP_BUTTON0_PORT                     (gpioPortB)
 
-#define BSP_BUTTON_COUNT                     (1U)
-#define BSP_BUTTON_INIT                      { { BSP_BUTTON0_PORT, BSP_BUTTON0_PIN } }
+// #define BSP_BUTTON_COUNT                     (1U)
+#define BSP_BUTTON_COUNT                     (3U)
+#define BSP_BUTTON_INIT                      { { BSP_BUTTON0_PORT, BSP_BUTTON0_PIN }, \
+												{ BSP_BUTTON1_PORT, BSP_BUTTON1_PIN } , \
+												{ BSP_BUTTON2_PORT, BSP_BUTTON2_PIN }  }
 #define BSP_BUTTON_GPIO_DOUT                 (HAL_GPIO_DOUT_LOW)
 #define BSP_BUTTON_GPIO_MODE                 (HAL_GPIO_MODE_INPUT)
 // [BUTTON]$
-
+// START
+#define BSP_BUTTON1_PIN                      (1U)
+#define BSP_BUTTON1_PORT                     (gpioPortB)
+//STOP
+#define BSP_BUTTON2_PIN                      (2U)
+#define BSP_BUTTON2_PORT                     (gpioPortB)
 // $[CMU]
 #define BSP_CLK_HFXO_PRESENT                 (1)
 #define BSP_CLK_HFXO_FREQ                    (38400000UL)
@@ -141,8 +152,10 @@
 // $[LED]
 #define BSP_LED_PRESENT                      (1)
 
-#define BSP_LED0_PIN                         (0U)
-#define BSP_LED0_PORT                        (gpioPortB)
+// #define BSP_LED0_PIN                         (0U)
+// #define BSP_LED0_PORT                        (gpioPortB)
+#define BSP_LED0_PIN                         (8U)
+#define BSP_LED0_PORT                        (gpioPortA)
 
 #define BSP_LED_COUNT                        (1U)
 #define BSP_LED_INIT                         { { BSP_LED0_PORT, BSP_LED0_PIN } }
