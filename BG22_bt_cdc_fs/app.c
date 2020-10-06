@@ -587,8 +587,8 @@ void flash_erase() {
 	// printLog("verify erased: %d\r\n", empty);
 }
 void store_event(uint8_t *event) {
-    CORE_DECLARE_IRQ_STATE;
-    CORE_ENTER_ATOMIC();
+    // CORE_DECLARE_IRQ_STATE;
+    // CORE_ENTER_ATOMIC();
 
 	if (encounter_count<(1<<(20-5))) {
 		int32_t retCode = storage_writeRaw(encounter_count<<5, event, 32);
@@ -606,7 +606,7 @@ void store_event(uint8_t *event) {
 		/* Need to indicate that memory is full */
 		;
 	}
-    CORE_EXIT_ATOMIC(); // Enable interrupts
+    // CORE_EXIT_ATOMIC(); // Enable interrupts
 }
 
 void store_time(uint8_t *data, uint8_t len) {
@@ -1368,7 +1368,8 @@ static const ButtonArray_t buttonArray[BSP_BUTTON_COUNT] = BSP_BUTTON_INIT;
 
 void init_GPIO_buttons() {
 	GPIOINT_Init();
-	for (int i = 0; i < BSP_BUTTON_COUNT; i++) {
+	// start at 1 to keep LED off
+	for (int i = 1; i < BSP_BUTTON_COUNT; i++) {
 		GPIO_PinModeSet(buttonArray[i].port, buttonArray[i].pin,
 				gpioModeInputPullFilter, 1);
 		GPIO_ExtIntConfig(buttonArray[i].port, buttonArray[i].pin,
@@ -1719,7 +1720,8 @@ void appMain(gecko_configuration_t *pconfig)
 		    	// 15ms, 30ms, 100ms
 		    	// gecko_cmd_le_connection_set_timing_parameters(_conn_handle, 12, 24, 0, 10, 0, 0xFFFF);
 		    	// 15ms, 30ms, 100ms
-		    	gecko_cmd_le_connection_set_timing_parameters(_conn_handle, 6, 6, 0, 10, 0, 0xFFFF);
+		    	//gecko_cmd_le_connection_set_timing_parameters(_conn_handle, 6, 6, 0, 10, 0, 0xFFFF);
+		    	gecko_cmd_le_connection_set_timing_parameters(_conn_handle, 6, 6, 0, 1000, 0, 0xFFFF);
 
 			break;
 
